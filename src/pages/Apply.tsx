@@ -59,7 +59,7 @@ const Apply = () => {
       portfolio_url: parsed.data.portfolio_url || null,
       linkedin_url: parsed.data.linkedin_url || null,
     };
-    const { error } = await supabase.from("applications").insert(payload);
+    const { error } = await supabase.from("applications").insert([payload]);
     setLoading(false);
     if (error) {
       toast({ title: "Submission failed", description: error.message, variant: "destructive" });
