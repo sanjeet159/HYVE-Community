@@ -54,10 +54,16 @@ const Apply = () => {
       return;
     }
     setLoading(true);
+    const d = parsed.data;
     const payload = {
-      ...parsed.data,
-      portfolio_url: parsed.data.portfolio_url || null,
-      linkedin_url: parsed.data.linkedin_url || null,
+      full_name: d.full_name as string,
+      whatsapp_number: d.whatsapp_number as string,
+      primary_skill: d.primary_skill as typeof skills[number],
+      experience: d.experience as typeof experiences[number],
+      city: d.city as string,
+      why_join: d.why_join as string,
+      portfolio_url: d.portfolio_url ? d.portfolio_url : null,
+      linkedin_url: d.linkedin_url ? d.linkedin_url : null,
     };
     const { error } = await supabase.from("applications").insert([payload]);
     setLoading(false);
