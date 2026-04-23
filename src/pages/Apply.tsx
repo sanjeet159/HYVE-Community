@@ -66,12 +66,16 @@ const schema = z.object({
     .max(20)
     .regex(/^[+\d\s()-]+$/, "Only digits, spaces, +, -, ()"),
   primary_skill: z.enum(skills),
+  other_specialization: z.string().trim().max(100).optional().or(z.literal("")),
   experience: z.enum(experiences),
   city: z.string().trim().min(2).max(100),
   portfolio_url: z.string().trim().url("Invalid URL").max(300).optional().or(z.literal("")),
   linkedin_url: z.string().trim().url("Invalid URL").max(300).optional().or(z.literal("")),
   why_join: z.string().trim().min(10, "Tell us a bit more (min 10 chars)").max(2000),
-});
+}).refine(
+  (d) => d.primary_skill !== "Other" || (d.other_specialization && d.other_specialization.trim().length >= 2),
+  { message: "Tell us your specialization", path: ["other_specialization"] },
+);
 
 type FormState = z.input<typeof schema>;
 
@@ -79,6 +83,7 @@ const initial: FormState = {
   full_name: "",
   whatsapp_number: "",
   primary_skill: "UI/UX",
+  other_specialization: "",
   experience: "0-1",
   city: "",
   portfolio_url: "",
