@@ -317,8 +317,8 @@ const Apply = () => {
             transition={{ duration: 0.6, delay: 0.25 }}
             className="mt-8 flex flex-wrap items-center gap-6 text-sm text-background/60"
           >
-            <Stat value="500+" label="Active members" />
-            <Stat value="40+" label="Cities" />
+            <Stat value="136+" label="Active members" />
+            <Stat value="7+" label="Cities" />
             <Stat value="2 min" label="To apply" />
           </motion.div>
         </div>
