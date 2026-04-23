@@ -239,9 +239,228 @@ const Row = ({ label, children }: { label: string; children: React.ReactNode }) 
 );
 
 const LinkOut = ({ url }: { url: string }) => (
-  <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
-    {url.replace(/^https?:\/\//, "").slice(0, 30)}<ExternalLink className="h-3 w-3" />
+  <a
+    href={url}
+    target="_blank"
+    rel="noreferrer"
+    className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+  >
+    {url.replace(/^https?:\/\//, "").replace(/\/$/, "").slice(0, 32)}
+    <ExternalLink className="h-3 w-3" />
   </a>
+);
+
+const initialsOf = (name: string) =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("") || "?";
+
+const ApplicationDetail = ({
+  app,
+  onAction,
+  onClose,
+}: {
+  app: Application;
+  onAction: (a: Application, s: Status) => void;
+  onClose: () => void;
+}) => {
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+  const waNumber = app.whatsapp_number.replace(/[^\d]/g, "");
+
+  useEffect(() => {
+    let active = true;
+    if (!app.resume_url) {
+      setResumeUrl(null);
+      return;
+    }
+    supabase.storage
+      .from("resumes")
+      .createSignedUrl(app.resume_url, 60 * 10)
+      .then(({ data }) => {
+        if (active) setResumeUrl(data?.signedUrl ?? null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [app.resume_url]);
+
+  const skillLabel =
+    app.primary_skill === "Other" && app.other_specialization
+      ? `Other · ${app.other_specialization}`
+      : app.primary_skill;
+
+  return (
+    <div className="flex max-h-[90vh] flex-col">
+      {/* Header */}
+      <div className="relative border-b border-border bg-gradient-to-br from-primary/10 via-card to-card px-6 pb-5 pt-7">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/20 blur-3xl"
+        />
+        <div className="relative flex items-start gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-gold font-display text-xl font-bold text-primary-foreground shadow-gold">
+            {initialsOf(app.full_name)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <DialogTitle className="font-display text-2xl font-bold leading-tight">
+              {app.full_name}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Application detail for {app.full_name}
+            </DialogDescription>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <Chip icon={Briefcase}>{skillLabel}</Chip>
+              <Chip icon={Clock}>{app.experience}y exp</Chip>
+              <Chip icon={MapPin}>{app.city}</Chip>
+              <StatusBadge status={app.status} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
+        {/* Contact */}
+        <Section title="Contact">
+          <InfoRow icon={Phone} label="WhatsApp">
+            <a
+              href={`https://wa.me/${waNumber}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-medium text-foreground hover:text-primary"
+            >
+              {app.whatsapp_number}
+            </a>
+          </InfoRow>
+          <InfoRow icon={Calendar} label="Applied">
+            <span className="text-sm text-foreground">
+              {new Date(app.created_at).toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+          </InfoRow>
+        </Section>
+
+        {/* Links */}
+        {(app.portfolio_url || app.linkedin_url || app.resume_url) && (
+          <Section title="Links & files">
+            {app.portfolio_url && (
+              <InfoRow icon={Globe} label="Portfolio">
+                <LinkOut url={app.portfolio_url} />
+              </InfoRow>
+            )}
+            {app.linkedin_url && (
+              <InfoRow icon={Linkedin} label="LinkedIn">
+                <LinkOut url={app.linkedin_url} />
+              </InfoRow>
+            )}
+            {app.resume_url && (
+              <InfoRow icon={FileText} label="Resume">
+                {resumeUrl ? (
+                  <a
+                    href={resumeUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                  >
+                    View resume <ExternalLink className="h-3 w-3" />
+                  </a>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Loading…</span>
+                )}
+              </InfoRow>
+            )}
+          </Section>
+        )}
+
+        {/* Why join */}
+        <Section title="Why join">
+          <div className="rounded-xl border border-border bg-muted/30 p-4">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+              {app.why_join}
+            </p>
+          </div>
+        </Section>
+      </div>
+
+      {/* Footer actions */}
+      <div className="flex flex-col-reverse gap-2 border-t border-border bg-muted/20 px-6 py-4 sm:flex-row sm:items-center sm:justify-end">
+        {app.status !== "rejected" && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              onAction(app, "rejected");
+              onClose();
+            }}
+          >
+            <X className="mr-1.5 h-4 w-4" /> Reject
+          </Button>
+        )}
+        {app.status !== "approved" && (
+          <Button
+            onClick={() => {
+              onAction(app, "approved");
+              onClose();
+            }}
+            className="bg-success text-success-foreground hover:bg-success/90"
+          >
+            <Check className="mr-1.5 h-4 w-4" /> Approve
+          </Button>
+        )}
+        {app.status === "approved" && (
+          <Button variant="ghost" onClick={onClose}>
+            Close
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div>
+    <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      {title}
+    </div>
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
+      {children}
+    </div>
+  </div>
+);
+
+const InfoRow = ({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: typeof Phone;
+  label: string;
+  children: React.ReactNode;
+}) => (
+  <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-3 last:border-0">
+    <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+      <Icon className="h-4 w-4 text-primary" />
+      <span className="font-medium">{label}</span>
+    </div>
+    <div className="min-w-0 truncate text-right">{children}</div>
+  </div>
+);
+
+const Chip = ({
+  icon: Icon,
+  children,
+}: {
+  icon: typeof Briefcase;
+  children: React.ReactNode;
+}) => (
+  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-0.5 text-xs font-medium text-foreground">
+    <Icon className="h-3 w-3 text-muted-foreground" /> {children}
+  </span>
 );
 
 export default AdminApplications;
