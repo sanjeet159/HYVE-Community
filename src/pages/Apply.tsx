@@ -57,7 +57,7 @@ const expMeta: Record<typeof experiences[number], { label: string; sub: string }
   "3+": { label: "Seasoned pro", sub: "3+ years" },
 };
 
-const schema = z.object({
+const baseSchema = z.object({
   full_name: z.string().trim().min(2, "Min 2 characters").max(100),
   whatsapp_number: z
     .string()
@@ -72,12 +72,16 @@ const schema = z.object({
   portfolio_url: z.string().trim().url("Invalid URL").max(300).optional().or(z.literal("")),
   linkedin_url: z.string().trim().url("Invalid URL").max(300).optional().or(z.literal("")),
   why_join: z.string().trim().min(10, "Tell us a bit more (min 10 chars)").max(2000),
-}).refine(
-  (d) => d.primary_skill !== "Other" || (d.other_specialization && d.other_specialization.trim().length >= 2),
+});
+
+const fullSchema = baseSchema.refine(
+  (d) =>
+    d.primary_skill !== "Other" ||
+    (d.other_specialization && d.other_specialization.trim().length >= 2),
   { message: "Tell us your specialization", path: ["other_specialization"] },
 );
 
-type FormState = z.input<typeof schema>;
+type FormState = z.input<typeof baseSchema>;
 
 const initial: FormState = {
   full_name: "",
@@ -100,10 +104,17 @@ const steps = [
 
 const stepFields: Record<number, (keyof FormState)[]> = {
   0: ["full_name", "whatsapp_number", "city"],
-  1: ["primary_skill", "experience"],
+  1: ["primary_skill", "experience", "other_specialization"],
   2: ["portfolio_url", "linkedin_url"],
   3: ["why_join"],
 };
+
+const MAX_RESUME_BYTES = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_RESUME_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
 
 const Apply = () => {
   const [form, setForm] = useState<FormState>(initial);
