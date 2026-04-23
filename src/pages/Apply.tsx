@@ -122,21 +122,70 @@ const Apply = () => {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [step, setStep] = useState(0);
+  const [resume, setResume] = useState<File | null>(null);
+  const [resumeError, setResumeError] = useState<string>("");
+  const [otherDialogOpen, setOtherDialogOpen] = useState(false);
+  const [otherDraft, setOtherDraft] = useState("");
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => {
     setForm((f) => ({ ...f, [k]: v }));
     setErrors((e) => ({ ...e, [k]: "" }));
   };
 
+  const handleResume = (file: File | null) => {
+    setResumeError("");
+    if (!file) {
+      setResume(null);
+      return;
+    }
+    if (!ALLOWED_RESUME_TYPES.includes(file.type)) {
+      setResumeError("Only PDF or Word documents are allowed");
+      return;
+    }
+    if (file.size > MAX_RESUME_BYTES) {
+      setResumeError("Max file size is 5 MB");
+      return;
+    }
+    setResume(file);
+  };
+
+  const openOtherDialog = () => {
+    setOtherDraft(form.other_specialization || "");
+    setOtherDialogOpen(true);
+  };
+
+  const confirmOther = () => {
+    const v = otherDraft.trim();
+    if (v.length < 2) {
+      setErrors((e) => ({ ...e, other_specialization: "Min 2 characters" }));
+      return;
+    }
+    set("primary_skill", "Other");
+    set("other_specialization", v);
+    setOtherDialogOpen(false);
+  };
+
   const validateStep = (s: number) => {
     const fields = stepFields[s];
-    const partial = schema.pick(Object.fromEntries(fields.map((f) => [f, true])) as never);
+    const partial = baseSchema.pick(
+      Object.fromEntries(fields.map((f) => [f, true])) as never,
+    );
     const result = partial.safeParse(form);
+    const fe: Record<string, string> = {};
     if (!result.success) {
-      const fe: Record<string, string> = {};
       result.error.issues.forEach((i) => {
         fe[i.path[0] as string] = i.message;
       });
+    }
+    // Cross-field check on craft step: Other requires specialization
+    if (
+      s === 1 &&
+      form.primary_skill === "Other" &&
+      (!form.other_specialization || form.other_specialization.trim().length < 2)
+    ) {
+      fe.other_specialization = "Tell us your specialization";
+    }
+    if (Object.keys(fe).length) {
       setErrors((prev) => ({ ...prev, ...fe }));
       return false;
     }
@@ -150,15 +199,26 @@ const Apply = () => {
 
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
+  const uploadResume = async (): Promise<string | null> => {
+    if (!resume) return null;
+    const ext = resume.name.split(".").pop()?.toLowerCase() || "pdf";
+    const safeName = `${crypto.randomUUID()}.${ext}`;
+    const path = `applications/${safeName}`;
+    const { error } = await supabase.storage
+      .from("resumes")
+      .upload(path, resume, { contentType: resume.type, upsert: false });
+    if (error) throw error;
+    return path;
+  };
+
   const submit = async () => {
-    const parsed = schema.safeParse(form);
+    const parsed = fullSchema.safeParse(form);
     if (!parsed.success) {
       const fe: Record<string, string> = {};
       parsed.error.issues.forEach((i) => {
         fe[i.path[0] as string] = i.message;
       });
       setErrors(fe);
-      // jump back to first step with errors
       for (const s of [0, 1, 2, 3]) {
         if (stepFields[s].some((f) => fe[f])) {
           setStep(s);
@@ -168,24 +228,33 @@ const Apply = () => {
       return;
     }
     setLoading(true);
-    const d = parsed.data;
-    const payload = {
-      full_name: d.full_name as string,
-      whatsapp_number: d.whatsapp_number as string,
-      primary_skill: d.primary_skill as typeof skills[number],
-      experience: d.experience as typeof experiences[number],
-      city: d.city as string,
-      why_join: d.why_join as string,
-      portfolio_url: d.portfolio_url ? d.portfolio_url : null,
-      linkedin_url: d.linkedin_url ? d.linkedin_url : null,
-    };
-    const { error } = await supabase.from("applications").insert([payload]);
-    setLoading(false);
-    if (error) {
-      toast({ title: "Submission failed", description: error.message, variant: "destructive" });
-      return;
+    try {
+      const resumePath = await uploadResume();
+      const d = parsed.data;
+      const payload = {
+        full_name: d.full_name as string,
+        whatsapp_number: d.whatsapp_number as string,
+        primary_skill: d.primary_skill as typeof skills[number],
+        other_specialization:
+          d.primary_skill === "Other" && d.other_specialization
+            ? d.other_specialization
+            : null,
+        experience: d.experience as typeof experiences[number],
+        city: d.city as string,
+        why_join: d.why_join as string,
+        portfolio_url: d.portfolio_url ? d.portfolio_url : null,
+        linkedin_url: d.linkedin_url ? d.linkedin_url : null,
+        resume_url: resumePath,
+      };
+      const { error } = await supabase.from("applications").insert([payload]);
+      if (error) throw error;
+      setDone(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Something went wrong";
+      toast({ title: "Submission failed", description: msg, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-    setDone(true);
   };
 
   const progress = useMemo(() => ((step + 1) / steps.length) * 100, [step]);
