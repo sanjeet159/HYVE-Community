@@ -231,13 +231,6 @@ const StatusBadge = ({ status }: { status: Status }) => {
   return <Badge className="bg-primary/15 text-primary hover:bg-primary/15">Pending</Badge>;
 };
 
-const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="flex items-baseline justify-between gap-4">
-    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
-    <span className="text-right">{children}</span>
-  </div>
-);
-
 const LinkOut = ({ url }: { url: string }) => (
   <a
     href={url}
