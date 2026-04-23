@@ -1,1 +1,4 @@
 project_id = "mrnmzweiobttwlmvsuqo"
+
+[functions.suggest-why-join]
+verify_jwt = false
