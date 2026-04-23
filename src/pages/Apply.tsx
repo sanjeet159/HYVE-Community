@@ -471,6 +471,57 @@ const Apply = () => {
           We read every application personally · Replies on WhatsApp within a few days
         </p>
       </section>
+
+      {/* Other specialization dialog */}
+      <Dialog open={otherDialogOpen} onOpenChange={setOtherDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">What's your specialization?</DialogTitle>
+            <DialogDescription>
+              Tell us in a few words — e.g. Motion design, Data engineering, Brand strategy.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="other-spec" className="text-sm font-medium">
+              Specialization
+            </Label>
+            <Input
+              id="other-spec"
+              value={otherDraft}
+              onChange={(e) => setOtherDraft(e.target.value)}
+              placeholder="e.g. Motion design"
+              maxLength={100}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  confirmOther();
+                }
+              }}
+              className="h-11"
+            />
+            {errors.other_specialization && (
+              <p className="text-xs text-destructive">{errors.other_specialization}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setOtherDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={confirmOther}
+              className="bg-gradient-gold text-primary-foreground hover:opacity-95"
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -481,6 +532,14 @@ type StepProps = {
   form: FormState;
   set: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
   errors: Record<string, string>;
+};
+
+type CraftStepProps = StepProps & { onPickOther: () => void };
+
+type WorkStepProps = StepProps & {
+  resume: File | null;
+  resumeError: string;
+  onResume: (file: File | null) => void;
 };
 
 const StepAbout = ({ form, set, errors }: StepProps) => (
