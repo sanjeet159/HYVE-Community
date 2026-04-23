@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { Search, Check, X, Copy, ExternalLink, MessageCircle } from "lucide-react";
+import { Search, Check, X, Copy, ExternalLink, MessageCircle, Phone, MapPin, Briefcase, Clock, FileText, Linkedin, Globe, Calendar } from "lucide-react";
 
 type Status = "pending" | "approved" | "rejected";
 interface Application {
@@ -16,10 +16,12 @@ interface Application {
   full_name: string;
   whatsapp_number: string;
   primary_skill: string;
+  other_specialization: string | null;
   experience: string;
   city: string;
   portfolio_url: string | null;
   linkedin_url: string | null;
+  resume_url: string | null;
   why_join: string;
   status: Status;
   created_at: string;
