@@ -160,29 +160,13 @@ const AdminApplications = () => {
 
       {/* Detail dialog */}
       <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-xl gap-0 overflow-hidden p-0">
           {viewing && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="font-display text-2xl">{viewing.full_name}</DialogTitle>
-                <DialogDescription>
-                  {viewing.primary_skill} · {viewing.experience}y · {viewing.city}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-3 text-sm">
-                <Row label="WhatsApp">{viewing.whatsapp_number}</Row>
-                {viewing.portfolio_url && <Row label="Portfolio"><LinkOut url={viewing.portfolio_url} /></Row>}
-                {viewing.linkedin_url && <Row label="LinkedIn"><LinkOut url={viewing.linkedin_url} /></Row>}
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Why join</div>
-                  <p className="mt-1 whitespace-pre-wrap leading-relaxed">{viewing.why_join}</p>
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <StatusBadge status={viewing.status} />
-                  <span className="text-xs text-muted-foreground">Applied {new Date(viewing.created_at).toLocaleDateString()}</span>
-                </div>
-              </div>
-            </>
+            <ApplicationDetail
+              app={viewing}
+              onAction={updateStatus}
+              onClose={() => setViewing(null)}
+            />
           )}
         </DialogContent>
       </Dialog>
