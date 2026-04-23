@@ -86,9 +86,14 @@
   * { @apply border-border; }
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  h1, h2, h3, h4 { @apply font-semibold tracking-tight; }
+  h1, h2, h3, h4 {
+    @apply font-semibold;
+    letter-spacing: -0.02em;
+  }
+  h1 { letter-spacing: -0.035em; }
 }
 
 @layer utilities {
