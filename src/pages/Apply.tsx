@@ -1004,15 +1004,12 @@ const Header = () => (
   <header className="border-b border-border bg-background">
     <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
       <Link to="/">
-        <HyveLogo />
-      </Link>
-      <Link to="/admin/login" className="text-sm text-muted-foreground hover:text-foreground">
-        Admin
+        <img src="/logo.png" alt="Hyve" className="h-8 w-auto" />
       </Link>
     </div>
   </header>
 );
-
+    
 const SuccessScreen = () => (
   <div className="min-h-screen bg-background">
     <Header />
