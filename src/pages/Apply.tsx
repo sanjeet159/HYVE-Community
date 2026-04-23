@@ -515,13 +515,25 @@ const StepAbout = ({ form, set, errors }: StepProps) => (
     <StepHeader eyebrow="01 — About you" title="Let's start with the basics" desc="Tell us who you are and where to reach you." />
     <Field label="Full name" error={errors.full_name} icon={User}>
       <Input value={form.full_name} onChange={(e) => set("full_name", e.target.value)} placeholder="Jane Doe" maxLength={100} className="h-12 pl-10 transition-all focus:ring-2 focus:ring-primary/20" />
-    </Field>
-    <Field label="WhatsApp number" error={errors.whatsapp_number} icon={Phone} hint="Include country code — this is how we'll reach you.">
-      <Input value={form.whatsapp_number} onChange={(e) => set("whatsapp_number", e.target.value)} placeholder="+91 98765 43210" maxLength={20} inputMode="tel" className="h-12 pl-10 transition-all focus:ring-2 focus:ring-primary/20" />
-    </Field>
-    <Field label="City" error={errors.city} icon={MapPin}>
-      <Input value={form.city} onChange={(e) => set("city", e.target.value)} placeholder="Bengaluru" maxLength={100} className="h-12 pl-10 transition-all focus:ring-2 focus:ring-primary/20" />
-    </Field>
+    <Field
+  label="WhatsApp number"
+  error={errors.whatsapp_number}
+  icon={Phone}
+  hint="Indian numbers only (+91)"
+>
+  <div className="relative flex h-12 items-center">
+    <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <span className="absolute left-10 top-1/2 -translate-y-1/2 select-none border-r border-border pr-2 text-sm font-medium text-foreground">+91</span>
+    <Input
+      value={form.whatsapp_number.replace(/^\+91\s?/, "")}
+      onChange={(e) => set("whatsapp_number", "+91 " + e.target.value.replace(/\D/g, ""))}
+      placeholder="98765 43210"
+      maxLength={15}
+      inputMode="numeric"
+      className="h-12 pl-[4.5rem] transition-all focus:ring-2 focus:ring-primary/20"
+    />
+  </div>
+</Field>
   </div>
 );
 
