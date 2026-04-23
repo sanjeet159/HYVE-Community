@@ -403,8 +403,24 @@ const Apply = () => {
                 className="space-y-6"
               >
                 {step === 0 && <StepAbout form={form} set={set} errors={errors} />}
-                {step === 1 && <StepCraft form={form} set={set} errors={errors} />}
-                {step === 2 && <StepWork form={form} set={set} errors={errors} />}
+                {step === 1 && (
+                  <StepCraft
+                    form={form}
+                    set={set}
+                    errors={errors}
+                    onPickOther={openOtherDialog}
+                  />
+                )}
+                {step === 2 && (
+                  <StepWork
+                    form={form}
+                    set={set}
+                    errors={errors}
+                    resume={resume}
+                    resumeError={resumeError}
+                    onResume={handleResume}
+                  />
+                )}
                 {step === 3 && <StepStory form={form} set={set} errors={errors} />}
               </motion.div>
             </AnimatePresence>
