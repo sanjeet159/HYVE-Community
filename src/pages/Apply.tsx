@@ -585,7 +585,7 @@ const StepAbout = ({ form, set, errors }: StepProps) => (
   </div>
 );
 
-const StepCraft = ({ form, set, errors }: StepProps) => (
+const StepCraft = ({ form, set, errors, onPickOther }: CraftStepProps) => (
   <div className="space-y-8">
     <StepHeader
       eyebrow="02 — Your craft"
@@ -599,11 +599,19 @@ const StepCraft = ({ form, set, errors }: StepProps) => (
         {skills.map((s) => {
           const Icon = skillMeta[s].icon;
           const active = form.primary_skill === s;
+          const isOther = s === "Other";
           return (
             <button
               key={s}
               type="button"
-              onClick={() => set("primary_skill", s)}
+              onClick={() => {
+                if (isOther) {
+                  onPickOther();
+                } else {
+                  set("primary_skill", s);
+                  set("other_specialization", "");
+                }
+              }}
               className={`group relative flex items-start gap-3 rounded-xl border p-4 text-left transition ${
                 active
                   ? "border-primary bg-primary/5 shadow-soft"
@@ -619,7 +627,11 @@ const StepCraft = ({ form, set, errors }: StepProps) => (
               </span>
               <span className="flex-1">
                 <span className="block text-sm font-semibold">{s}</span>
-                <span className="block text-xs text-muted-foreground">{skillMeta[s].tag}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {isOther && active && form.other_specialization
+                    ? form.other_specialization
+                    : skillMeta[s].tag}
+                </span>
               </span>
               {active && (
                 <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-primary" />
@@ -628,8 +640,20 @@ const StepCraft = ({ form, set, errors }: StepProps) => (
           );
         })}
       </div>
+      {form.primary_skill === "Other" && (
+        <button
+          type="button"
+          onClick={onPickOther}
+          className="mt-2 text-xs font-medium text-primary hover:underline"
+        >
+          {form.other_specialization ? "Edit specialization" : "Add specialization"}
+        </button>
+      )}
       {errors.primary_skill && (
         <p className="mt-2 text-xs text-destructive">{errors.primary_skill}</p>
+      )}
+      {errors.other_specialization && (
+        <p className="mt-2 text-xs text-destructive">{errors.other_specialization}</p>
       )}
     </div>
 
@@ -662,38 +686,100 @@ const StepCraft = ({ form, set, errors }: StepProps) => (
   </div>
 );
 
-const StepWork = ({ form, set, errors }: StepProps) => (
-  <div className="space-y-6">
-    <StepHeader
-      eyebrow="03 — Your work"
-      title="Show us what you've built"
-      desc="Optional, but a portfolio helps us get to know you faster."
-    />
-    <Field label="Portfolio URL" optional error={errors.portfolio_url} icon={Link2}>
-      <Input
-        value={form.portfolio_url}
-        onChange={(e) => set("portfolio_url", e.target.value)}
-        placeholder="https://yourwork.com"
-        maxLength={300}
-        className="h-12 pl-10"
+const StepWork = ({ form, set, errors, resume, resumeError, onResume }: WorkStepProps) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  return (
+    <div className="space-y-6">
+      <StepHeader
+        eyebrow="03 — Your work"
+        title="Show us what you've built"
+        desc="Optional, but a portfolio helps us get to know you faster."
       />
-    </Field>
-    <Field label="LinkedIn URL" optional error={errors.linkedin_url} icon={Linkedin}>
-      <Input
-        value={form.linkedin_url}
-        onChange={(e) => set("linkedin_url", e.target.value)}
-        placeholder="https://linkedin.com/in/you"
-        maxLength={300}
-        className="h-12 pl-10"
-      />
-    </Field>
+      <Field label="Portfolio URL" optional error={errors.portfolio_url} icon={Link2}>
+        <Input
+          value={form.portfolio_url}
+          onChange={(e) => set("portfolio_url", e.target.value)}
+          placeholder="https://yourwork.com"
+          maxLength={300}
+          className="h-12 pl-10"
+        />
+      </Field>
+      <Field label="LinkedIn URL" optional error={errors.linkedin_url} icon={Linkedin}>
+        <Input
+          value={form.linkedin_url}
+          onChange={(e) => set("linkedin_url", e.target.value)}
+          placeholder="https://linkedin.com/in/you"
+          maxLength={300}
+          className="h-12 pl-10"
+        />
+      </Field>
 
-    <div className="rounded-xl border border-dashed border-border bg-muted/40 p-4 text-xs text-muted-foreground">
-      <span className="font-medium text-foreground">Tip:</span> Even a Notion page, GitHub repo, or
-      Instagram with your work counts. We care about the craft, not the polish.
+      {/* Resume upload */}
+      <div className="space-y-1.5">
+        <Label className="text-sm font-medium">
+          Resume <span className="font-normal text-muted-foreground">(optional)</span>
+        </Label>
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          className="hidden"
+          onChange={(e) => onResume(e.target.files?.[0] ?? null)}
+        />
+        {!resume ? (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="flex w-full items-center gap-4 rounded-xl border-2 border-dashed border-border bg-muted/30 px-5 py-6 text-left transition hover:border-primary/60 hover:bg-primary/5"
+          >
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-gold text-primary-foreground">
+              <Upload className="h-5 w-5" />
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold text-foreground">
+                Upload your resume
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                PDF or Word · Max 5 MB
+              </span>
+            </span>
+          </button>
+        ) : (
+          <div className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/5 p-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-gold text-primary-foreground">
+              <FileText className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{resume.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {(resume.size / 1024 / 1024).toFixed(2)} MB
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onResume(null);
+                if (inputRef.current) inputRef.current.value = "";
+              }}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+              aria-label="Remove resume"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        {resumeError && <p className="text-xs text-destructive">{resumeError}</p>}
+      </div>
+
+      <div className="rounded-xl border border-dashed border-border bg-muted/40 p-4 text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">Tip:</span> Even a Notion page, GitHub repo, or
+        Instagram with your work counts. We care about the craft, not the polish.
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const StepStory = ({ form, set, errors }: StepProps) => (
   <div className="space-y-6">
