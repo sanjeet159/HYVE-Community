@@ -518,15 +518,14 @@ const StepAbout = ({ form, set, errors }: StepProps) => (
     </Field>
     <Field label="WhatsApp number" error={errors.whatsapp_number} hint="Indian numbers only (+91)">
       <div className="relative flex h-12 items-center">
-        <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
-        <span className="absolute left-10 top-1/2 -translate-y-1/2 select-none border-r border-border pr-2.5 text-sm font-semibold text-foreground z-10">+91</span>
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 select-none border-r border-border pr-2.5 text-sm font-semibold text-foreground z-10">+91</span>
         <Input
           value={form.whatsapp_number.replace(/^\+91\s?/, "")}
           onChange={(e) => set("whatsapp_number", "+91 " + e.target.value.replace(/\D/g, ""))}
           placeholder="98765 43210"
           maxLength={15}
           inputMode="numeric"
-          className="h-12 pl-[4.8rem] transition-all focus:ring-2 focus:ring-primary/20"
+          className="h-12 pl-14 transition-all focus:ring-2 focus:ring-primary/20"
         />
       </div>
     </Field>
