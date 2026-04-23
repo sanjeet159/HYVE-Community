@@ -22,8 +22,10 @@ export type Database = {
           full_name: string
           id: string
           linkedin_url: string | null
+          other_specialization: string | null
           portfolio_url: string | null
           primary_skill: Database["public"]["Enums"]["skill_type"]
+          resume_url: string | null
           status: Database["public"]["Enums"]["application_status"]
           updated_at: string
           whatsapp_number: string
@@ -36,8 +38,10 @@ export type Database = {
           full_name: string
           id?: string
           linkedin_url?: string | null
+          other_specialization?: string | null
           portfolio_url?: string | null
           primary_skill: Database["public"]["Enums"]["skill_type"]
+          resume_url?: string | null
           status?: Database["public"]["Enums"]["application_status"]
           updated_at?: string
           whatsapp_number: string
@@ -50,8 +54,10 @@ export type Database = {
           full_name?: string
           id?: string
           linkedin_url?: string | null
+          other_specialization?: string | null
           portfolio_url?: string | null
           primary_skill?: Database["public"]["Enums"]["skill_type"]
+          resume_url?: string | null
           status?: Database["public"]["Enums"]["application_status"]
           updated_at?: string
           whatsapp_number?: string

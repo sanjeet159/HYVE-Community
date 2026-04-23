@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,6 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { HyveLogo } from "@/components/HyveLogo";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -27,6 +35,9 @@ import {
   MessageSquareHeart,
   Briefcase,
   Loader2,
+  FileText,
+  Upload,
+  X,
 } from "lucide-react";
 
 const skills = ["UI/UX", "Development", "Content Writing", "Digital Marketing", "Other"] as const;
@@ -46,7 +57,7 @@ const expMeta: Record<typeof experiences[number], { label: string; sub: string }
   "3+": { label: "Seasoned pro", sub: "3+ years" },
 };
 
-const schema = z.object({
+const baseSchema = z.object({
   full_name: z.string().trim().min(2, "Min 2 characters").max(100),
   whatsapp_number: z
     .string()
@@ -55,6 +66,7 @@ const schema = z.object({
     .max(20)
     .regex(/^[+\d\s()-]+$/, "Only digits, spaces, +, -, ()"),
   primary_skill: z.enum(skills),
+  other_specialization: z.string().trim().max(100).optional().or(z.literal("")),
   experience: z.enum(experiences),
   city: z.string().trim().min(2).max(100),
   portfolio_url: z.string().trim().url("Invalid URL").max(300).optional().or(z.literal("")),
@@ -62,12 +74,20 @@ const schema = z.object({
   why_join: z.string().trim().min(10, "Tell us a bit more (min 10 chars)").max(2000),
 });
 
-type FormState = z.input<typeof schema>;
+const fullSchema = baseSchema.refine(
+  (d) =>
+    d.primary_skill !== "Other" ||
+    (d.other_specialization && d.other_specialization.trim().length >= 2),
+  { message: "Tell us your specialization", path: ["other_specialization"] },
+);
+
+type FormState = z.input<typeof baseSchema>;
 
 const initial: FormState = {
   full_name: "",
   whatsapp_number: "",
   primary_skill: "UI/UX",
+  other_specialization: "",
   experience: "0-1",
   city: "",
   portfolio_url: "",
@@ -84,10 +104,17 @@ const steps = [
 
 const stepFields: Record<number, (keyof FormState)[]> = {
   0: ["full_name", "whatsapp_number", "city"],
-  1: ["primary_skill", "experience"],
+  1: ["primary_skill", "experience", "other_specialization"],
   2: ["portfolio_url", "linkedin_url"],
   3: ["why_join"],
 };
+
+const MAX_RESUME_BYTES = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_RESUME_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
 
 const Apply = () => {
   const [form, setForm] = useState<FormState>(initial);
@@ -95,21 +122,70 @@ const Apply = () => {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [step, setStep] = useState(0);
+  const [resume, setResume] = useState<File | null>(null);
+  const [resumeError, setResumeError] = useState<string>("");
+  const [otherDialogOpen, setOtherDialogOpen] = useState(false);
+  const [otherDraft, setOtherDraft] = useState("");
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => {
     setForm((f) => ({ ...f, [k]: v }));
     setErrors((e) => ({ ...e, [k]: "" }));
   };
 
+  const handleResume = (file: File | null) => {
+    setResumeError("");
+    if (!file) {
+      setResume(null);
+      return;
+    }
+    if (!ALLOWED_RESUME_TYPES.includes(file.type)) {
+      setResumeError("Only PDF or Word documents are allowed");
+      return;
+    }
+    if (file.size > MAX_RESUME_BYTES) {
+      setResumeError("Max file size is 5 MB");
+      return;
+    }
+    setResume(file);
+  };
+
+  const openOtherDialog = () => {
+    setOtherDraft(form.other_specialization || "");
+    setOtherDialogOpen(true);
+  };
+
+  const confirmOther = () => {
+    const v = otherDraft.trim();
+    if (v.length < 2) {
+      setErrors((e) => ({ ...e, other_specialization: "Min 2 characters" }));
+      return;
+    }
+    set("primary_skill", "Other");
+    set("other_specialization", v);
+    setOtherDialogOpen(false);
+  };
+
   const validateStep = (s: number) => {
     const fields = stepFields[s];
-    const partial = schema.pick(Object.fromEntries(fields.map((f) => [f, true])) as never);
+    const partial = baseSchema.pick(
+      Object.fromEntries(fields.map((f) => [f, true])) as never,
+    );
     const result = partial.safeParse(form);
+    const fe: Record<string, string> = {};
     if (!result.success) {
-      const fe: Record<string, string> = {};
       result.error.issues.forEach((i) => {
         fe[i.path[0] as string] = i.message;
       });
+    }
+    // Cross-field check on craft step: Other requires specialization
+    if (
+      s === 1 &&
+      form.primary_skill === "Other" &&
+      (!form.other_specialization || form.other_specialization.trim().length < 2)
+    ) {
+      fe.other_specialization = "Tell us your specialization";
+    }
+    if (Object.keys(fe).length) {
       setErrors((prev) => ({ ...prev, ...fe }));
       return false;
     }
@@ -123,15 +199,26 @@ const Apply = () => {
 
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
+  const uploadResume = async (): Promise<string | null> => {
+    if (!resume) return null;
+    const ext = resume.name.split(".").pop()?.toLowerCase() || "pdf";
+    const safeName = `${crypto.randomUUID()}.${ext}`;
+    const path = `applications/${safeName}`;
+    const { error } = await supabase.storage
+      .from("resumes")
+      .upload(path, resume, { contentType: resume.type, upsert: false });
+    if (error) throw error;
+    return path;
+  };
+
   const submit = async () => {
-    const parsed = schema.safeParse(form);
+    const parsed = fullSchema.safeParse(form);
     if (!parsed.success) {
       const fe: Record<string, string> = {};
       parsed.error.issues.forEach((i) => {
         fe[i.path[0] as string] = i.message;
       });
       setErrors(fe);
-      // jump back to first step with errors
       for (const s of [0, 1, 2, 3]) {
         if (stepFields[s].some((f) => fe[f])) {
           setStep(s);
@@ -141,24 +228,33 @@ const Apply = () => {
       return;
     }
     setLoading(true);
-    const d = parsed.data;
-    const payload = {
-      full_name: d.full_name as string,
-      whatsapp_number: d.whatsapp_number as string,
-      primary_skill: d.primary_skill as typeof skills[number],
-      experience: d.experience as typeof experiences[number],
-      city: d.city as string,
-      why_join: d.why_join as string,
-      portfolio_url: d.portfolio_url ? d.portfolio_url : null,
-      linkedin_url: d.linkedin_url ? d.linkedin_url : null,
-    };
-    const { error } = await supabase.from("applications").insert([payload]);
-    setLoading(false);
-    if (error) {
-      toast({ title: "Submission failed", description: error.message, variant: "destructive" });
-      return;
+    try {
+      const resumePath = await uploadResume();
+      const d = parsed.data;
+      const payload = {
+        full_name: d.full_name as string,
+        whatsapp_number: d.whatsapp_number as string,
+        primary_skill: d.primary_skill as typeof skills[number],
+        other_specialization:
+          d.primary_skill === "Other" && d.other_specialization
+            ? d.other_specialization
+            : null,
+        experience: d.experience as typeof experiences[number],
+        city: d.city as string,
+        why_join: d.why_join as string,
+        portfolio_url: d.portfolio_url ? d.portfolio_url : null,
+        linkedin_url: d.linkedin_url ? d.linkedin_url : null,
+        resume_url: resumePath,
+      };
+      const { error } = await supabase.from("applications").insert([payload]);
+      if (error) throw error;
+      setDone(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Something went wrong";
+      toast({ title: "Submission failed", description: msg, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-    setDone(true);
   };
 
   const progress = useMemo(() => ((step + 1) / steps.length) * 100, [step]);
@@ -307,8 +403,24 @@ const Apply = () => {
                 className="space-y-6"
               >
                 {step === 0 && <StepAbout form={form} set={set} errors={errors} />}
-                {step === 1 && <StepCraft form={form} set={set} errors={errors} />}
-                {step === 2 && <StepWork form={form} set={set} errors={errors} />}
+                {step === 1 && (
+                  <StepCraft
+                    form={form}
+                    set={set}
+                    errors={errors}
+                    onPickOther={openOtherDialog}
+                  />
+                )}
+                {step === 2 && (
+                  <StepWork
+                    form={form}
+                    set={set}
+                    errors={errors}
+                    resume={resume}
+                    resumeError={resumeError}
+                    onResume={handleResume}
+                  />
+                )}
                 {step === 3 && <StepStory form={form} set={set} errors={errors} />}
               </motion.div>
             </AnimatePresence>
@@ -359,6 +471,57 @@ const Apply = () => {
           We read every application personally · Replies on WhatsApp within a few days
         </p>
       </section>
+
+      {/* Other specialization dialog */}
+      <Dialog open={otherDialogOpen} onOpenChange={setOtherDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">What's your specialization?</DialogTitle>
+            <DialogDescription>
+              Tell us in a few words — e.g. Motion design, Data engineering, Brand strategy.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="other-spec" className="text-sm font-medium">
+              Specialization
+            </Label>
+            <Input
+              id="other-spec"
+              value={otherDraft}
+              onChange={(e) => setOtherDraft(e.target.value)}
+              placeholder="e.g. Motion design"
+              maxLength={100}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  confirmOther();
+                }
+              }}
+              className="h-11"
+            />
+            {errors.other_specialization && (
+              <p className="text-xs text-destructive">{errors.other_specialization}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setOtherDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={confirmOther}
+              className="bg-gradient-gold text-primary-foreground hover:opacity-95"
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -369,6 +532,14 @@ type StepProps = {
   form: FormState;
   set: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
   errors: Record<string, string>;
+};
+
+type CraftStepProps = StepProps & { onPickOther: () => void };
+
+type WorkStepProps = StepProps & {
+  resume: File | null;
+  resumeError: string;
+  onResume: (file: File | null) => void;
 };
 
 const StepAbout = ({ form, set, errors }: StepProps) => (
@@ -414,7 +585,7 @@ const StepAbout = ({ form, set, errors }: StepProps) => (
   </div>
 );
 
-const StepCraft = ({ form, set, errors }: StepProps) => (
+const StepCraft = ({ form, set, errors, onPickOther }: CraftStepProps) => (
   <div className="space-y-8">
     <StepHeader
       eyebrow="02 — Your craft"
@@ -428,11 +599,19 @@ const StepCraft = ({ form, set, errors }: StepProps) => (
         {skills.map((s) => {
           const Icon = skillMeta[s].icon;
           const active = form.primary_skill === s;
+          const isOther = s === "Other";
           return (
             <button
               key={s}
               type="button"
-              onClick={() => set("primary_skill", s)}
+              onClick={() => {
+                if (isOther) {
+                  onPickOther();
+                } else {
+                  set("primary_skill", s);
+                  set("other_specialization", "");
+                }
+              }}
               className={`group relative flex items-start gap-3 rounded-xl border p-4 text-left transition ${
                 active
                   ? "border-primary bg-primary/5 shadow-soft"
@@ -448,7 +627,11 @@ const StepCraft = ({ form, set, errors }: StepProps) => (
               </span>
               <span className="flex-1">
                 <span className="block text-sm font-semibold">{s}</span>
-                <span className="block text-xs text-muted-foreground">{skillMeta[s].tag}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {isOther && active && form.other_specialization
+                    ? form.other_specialization
+                    : skillMeta[s].tag}
+                </span>
               </span>
               {active && (
                 <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-primary" />
@@ -457,8 +640,20 @@ const StepCraft = ({ form, set, errors }: StepProps) => (
           );
         })}
       </div>
+      {form.primary_skill === "Other" && (
+        <button
+          type="button"
+          onClick={onPickOther}
+          className="mt-2 text-xs font-medium text-primary hover:underline"
+        >
+          {form.other_specialization ? "Edit specialization" : "Add specialization"}
+        </button>
+      )}
       {errors.primary_skill && (
         <p className="mt-2 text-xs text-destructive">{errors.primary_skill}</p>
+      )}
+      {errors.other_specialization && (
+        <p className="mt-2 text-xs text-destructive">{errors.other_specialization}</p>
       )}
     </div>
 
@@ -491,38 +686,100 @@ const StepCraft = ({ form, set, errors }: StepProps) => (
   </div>
 );
 
-const StepWork = ({ form, set, errors }: StepProps) => (
-  <div className="space-y-6">
-    <StepHeader
-      eyebrow="03 — Your work"
-      title="Show us what you've built"
-      desc="Optional, but a portfolio helps us get to know you faster."
-    />
-    <Field label="Portfolio URL" optional error={errors.portfolio_url} icon={Link2}>
-      <Input
-        value={form.portfolio_url}
-        onChange={(e) => set("portfolio_url", e.target.value)}
-        placeholder="https://yourwork.com"
-        maxLength={300}
-        className="h-12 pl-10"
+const StepWork = ({ form, set, errors, resume, resumeError, onResume }: WorkStepProps) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  return (
+    <div className="space-y-6">
+      <StepHeader
+        eyebrow="03 — Your work"
+        title="Show us what you've built"
+        desc="Optional, but a portfolio helps us get to know you faster."
       />
-    </Field>
-    <Field label="LinkedIn URL" optional error={errors.linkedin_url} icon={Linkedin}>
-      <Input
-        value={form.linkedin_url}
-        onChange={(e) => set("linkedin_url", e.target.value)}
-        placeholder="https://linkedin.com/in/you"
-        maxLength={300}
-        className="h-12 pl-10"
-      />
-    </Field>
+      <Field label="Portfolio URL" optional error={errors.portfolio_url} icon={Link2}>
+        <Input
+          value={form.portfolio_url}
+          onChange={(e) => set("portfolio_url", e.target.value)}
+          placeholder="https://yourwork.com"
+          maxLength={300}
+          className="h-12 pl-10"
+        />
+      </Field>
+      <Field label="LinkedIn URL" optional error={errors.linkedin_url} icon={Linkedin}>
+        <Input
+          value={form.linkedin_url}
+          onChange={(e) => set("linkedin_url", e.target.value)}
+          placeholder="https://linkedin.com/in/you"
+          maxLength={300}
+          className="h-12 pl-10"
+        />
+      </Field>
 
-    <div className="rounded-xl border border-dashed border-border bg-muted/40 p-4 text-xs text-muted-foreground">
-      <span className="font-medium text-foreground">Tip:</span> Even a Notion page, GitHub repo, or
-      Instagram with your work counts. We care about the craft, not the polish.
+      {/* Resume upload */}
+      <div className="space-y-1.5">
+        <Label className="text-sm font-medium">
+          Resume <span className="font-normal text-muted-foreground">(optional)</span>
+        </Label>
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          className="hidden"
+          onChange={(e) => onResume(e.target.files?.[0] ?? null)}
+        />
+        {!resume ? (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="flex w-full items-center gap-4 rounded-xl border-2 border-dashed border-border bg-muted/30 px-5 py-6 text-left transition hover:border-primary/60 hover:bg-primary/5"
+          >
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-gold text-primary-foreground">
+              <Upload className="h-5 w-5" />
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold text-foreground">
+                Upload your resume
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                PDF or Word · Max 5 MB
+              </span>
+            </span>
+          </button>
+        ) : (
+          <div className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/5 p-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-gold text-primary-foreground">
+              <FileText className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{resume.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {(resume.size / 1024 / 1024).toFixed(2)} MB
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onResume(null);
+                if (inputRef.current) inputRef.current.value = "";
+              }}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+              aria-label="Remove resume"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        {resumeError && <p className="text-xs text-destructive">{resumeError}</p>}
+      </div>
+
+      <div className="rounded-xl border border-dashed border-border bg-muted/40 p-4 text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">Tip:</span> Even a Notion page, GitHub repo, or
+        Instagram with your work counts. We care about the craft, not the polish.
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const StepStory = ({ form, set, errors }: StepProps) => (
   <div className="space-y-6">
