@@ -387,12 +387,18 @@ const StepAbout = ({ form, set, errors }: StepProps) => (
         className="h-12 pl-10"
       />
     </Field>
-    <Field label="WhatsApp number" error={errors.whatsapp_number} icon={Phone}>
+    <Field
+      label="WhatsApp number"
+      error={errors.whatsapp_number}
+      icon={Phone}
+      hint="Include country code — this is how we'll reach you."
+    >
       <Input
         value={form.whatsapp_number}
         onChange={(e) => set("whatsapp_number", e.target.value)}
         placeholder="+91 98765 43210"
         maxLength={20}
+        inputMode="tel"
         className="h-12 pl-10"
       />
     </Field>
@@ -575,12 +581,14 @@ const Field = ({
   label,
   optional,
   error,
+  hint,
   icon: Icon,
   children,
 }: {
   label: string;
   optional?: boolean;
   error?: string;
+  hint?: string;
   icon?: typeof User;
   children: React.ReactNode;
 }) => (
@@ -595,7 +603,11 @@ const Field = ({
       )}
       {children}
     </div>
-    {error && <p className="text-xs text-destructive">{error}</p>}
+    {error ? (
+      <p className="text-xs text-destructive">{error}</p>
+    ) : hint ? (
+      <p className="text-xs text-muted-foreground">{hint}</p>
+    ) : null}
   </div>
 );
 
