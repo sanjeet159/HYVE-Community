@@ -300,7 +300,7 @@ const Apply = () => {
             className="font-display text-4xl font-bold leading-[1.05] text-background md:text-6xl lg:text-7xl"
           >
             Find your people in the{" "}
-            <span className="bg-gradient-gold bg-clip-text text-transparent">Hyve</span>.
+            <span className="bg-gradient-gold bg-clip-text text-transparent">HYVE</span>.
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 16 }}
