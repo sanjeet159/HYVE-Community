@@ -15,7 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { HyveLogo } from "@/components/HyveLogo";
 import { toast } from "@/hooks/use-toast";
 import {
   CheckCircle2,
@@ -40,23 +39,27 @@ import {
   X,
   Wand2,
   RefreshCw,
+  Users,
+  Globe,
+  Clock,
+  Zap,
 } from "lucide-react";
 
 const skills = ["UI/UX", "Development", "Content Writing", "Digital Marketing", "Other"] as const;
 const experiences = ["0-1", "1-3", "3+"] as const;
 
-const skillMeta: Record<typeof skills[number], { icon: typeof Palette; tag: string }> = {
-  "UI/UX": { icon: Palette, tag: "Design beautiful experiences" },
-  "Development": { icon: Code2, tag: "Build the web" },
-  "Content Writing": { icon: PenLine, tag: "Words that convert" },
-  "Digital Marketing": { icon: Megaphone, tag: "Grow brands online" },
-  "Other": { icon: Layers, tag: "Something unique" },
+const skillMeta: Record<typeof skills[number], { icon: typeof Palette; tag: string; color: string }> = {
+  "UI/UX": { icon: Palette, tag: "Design beautiful experiences", color: "from-violet-500/20 to-purple-500/10 border-violet-500/30 hover:border-violet-500/60" },
+  "Development": { icon: Code2, tag: "Build the web", color: "from-blue-500/20 to-cyan-500/10 border-blue-500/30 hover:border-blue-500/60" },
+  "Content Writing": { icon: PenLine, tag: "Words that convert", color: "from-emerald-500/20 to-green-500/10 border-emerald-500/30 hover:border-emerald-500/60" },
+  "Digital Marketing": { icon: Megaphone, tag: "Grow brands online", color: "from-orange-500/20 to-amber-500/10 border-orange-500/30 hover:border-orange-500/60" },
+  "Other": { icon: Layers, tag: "Something unique", color: "from-rose-500/20 to-pink-500/10 border-rose-500/30 hover:border-rose-500/60" },
 };
 
-const expMeta: Record<typeof experiences[number], { label: string; sub: string }> = {
-  "0-1": { label: "Just starting", sub: "0 – 1 year" },
-  "1-3": { label: "Finding my groove", sub: "1 – 3 years" },
-  "3+": { label: "Seasoned pro", sub: "3+ years" },
+const expMeta: Record<typeof experiences[number], { label: string; sub: string; emoji: string }> = {
+  "0-1": { label: "Just starting", sub: "0 – 1 year", emoji: "🌱" },
+  "1-3": { label: "Finding my groove", sub: "1 – 3 years", emoji: "🚀" },
+  "3+": { label: "Seasoned pro", sub: "3+ years", emoji: "⚡" },
 };
 
 const baseSchema = z.object({
@@ -111,7 +114,7 @@ const stepFields: Record<number, (keyof FormState)[]> = {
   3: ["why_join"],
 };
 
-const MAX_RESUME_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_RESUME_BYTES = 5 * 1024 * 1024;
 const ALLOWED_RESUME_TYPES = [
   "application/pdf",
   "application/msword",
@@ -136,32 +139,17 @@ const Apply = () => {
 
   const handleResume = (file: File | null) => {
     setResumeError("");
-    if (!file) {
-      setResume(null);
-      return;
-    }
-    if (!ALLOWED_RESUME_TYPES.includes(file.type)) {
-      setResumeError("Only PDF or Word documents are allowed");
-      return;
-    }
-    if (file.size > MAX_RESUME_BYTES) {
-      setResumeError("Max file size is 5 MB");
-      return;
-    }
+    if (!file) { setResume(null); return; }
+    if (!ALLOWED_RESUME_TYPES.includes(file.type)) { setResumeError("Only PDF or Word documents are allowed"); return; }
+    if (file.size > MAX_RESUME_BYTES) { setResumeError("Max file size is 5 MB"); return; }
     setResume(file);
   };
 
-  const openOtherDialog = () => {
-    setOtherDraft(form.other_specialization || "");
-    setOtherDialogOpen(true);
-  };
+  const openOtherDialog = () => { setOtherDraft(form.other_specialization || ""); setOtherDialogOpen(true); };
 
   const confirmOther = () => {
     const v = otherDraft.trim();
-    if (v.length < 2) {
-      setErrors((e) => ({ ...e, other_specialization: "Min 2 characters" }));
-      return;
-    }
+    if (v.length < 2) { setErrors((e) => ({ ...e, other_specialization: "Min 2 characters" })); return; }
     set("primary_skill", "Other");
     set("other_specialization", v);
     setOtherDialogOpen(false);
@@ -169,36 +157,18 @@ const Apply = () => {
 
   const validateStep = (s: number) => {
     const fields = stepFields[s];
-    const partial = baseSchema.pick(
-      Object.fromEntries(fields.map((f) => [f, true])) as never,
-    );
+    const partial = baseSchema.pick(Object.fromEntries(fields.map((f) => [f, true])) as never);
     const result = partial.safeParse(form);
     const fe: Record<string, string> = {};
-    if (!result.success) {
-      result.error.issues.forEach((i) => {
-        fe[i.path[0] as string] = i.message;
-      });
-    }
-    // Cross-field check on craft step: Other requires specialization
-    if (
-      s === 1 &&
-      form.primary_skill === "Other" &&
-      (!form.other_specialization || form.other_specialization.trim().length < 2)
-    ) {
+    if (!result.success) result.error.issues.forEach((i) => { fe[i.path[0] as string] = i.message; });
+    if (s === 1 && form.primary_skill === "Other" && (!form.other_specialization || form.other_specialization.trim().length < 2)) {
       fe.other_specialization = "Tell us your specialization";
     }
-    if (Object.keys(fe).length) {
-      setErrors((prev) => ({ ...prev, ...fe }));
-      return false;
-    }
+    if (Object.keys(fe).length) { setErrors((prev) => ({ ...prev, ...fe })); return false; }
     return true;
   };
 
-  const next = () => {
-    if (!validateStep(step)) return;
-    setStep((s) => Math.min(s + 1, steps.length - 1));
-  };
-
+  const next = () => { if (!validateStep(step)) return; setStep((s) => Math.min(s + 1, steps.length - 1)); };
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
   const uploadResume = async (): Promise<string | null> => {
@@ -206,9 +176,7 @@ const Apply = () => {
     const ext = resume.name.split(".").pop()?.toLowerCase() || "pdf";
     const safeName = `${crypto.randomUUID()}.${ext}`;
     const path = `applications/${safeName}`;
-    const { error } = await supabase.storage
-      .from("resumes")
-      .upload(path, resume, { contentType: resume.type, upsert: false });
+    const { error } = await supabase.storage.from("resumes").upload(path, resume, { contentType: resume.type, upsert: false });
     if (error) throw error;
     return path;
   };
@@ -217,16 +185,9 @@ const Apply = () => {
     const parsed = fullSchema.safeParse(form);
     if (!parsed.success) {
       const fe: Record<string, string> = {};
-      parsed.error.issues.forEach((i) => {
-        fe[i.path[0] as string] = i.message;
-      });
+      parsed.error.issues.forEach((i) => { fe[i.path[0] as string] = i.message; });
       setErrors(fe);
-      for (const s of [0, 1, 2, 3]) {
-        if (stepFields[s].some((f) => fe[f])) {
-          setStep(s);
-          break;
-        }
-      }
+      for (const s of [0, 1, 2, 3]) { if (stepFields[s].some((f) => fe[f])) { setStep(s); break; } }
       return;
     }
     setLoading(true);
@@ -237,10 +198,7 @@ const Apply = () => {
         full_name: d.full_name as string,
         whatsapp_number: d.whatsapp_number as string,
         primary_skill: d.primary_skill as typeof skills[number],
-        other_specialization:
-          d.primary_skill === "Other" && d.other_specialization
-            ? d.other_specialization
-            : null,
+        other_specialization: d.primary_skill === "Other" && d.other_specialization ? d.other_specialization : null,
         experience: d.experience as typeof experiences[number],
         city: d.city as string,
         why_join: d.why_join as string,
@@ -270,223 +228,256 @@ const Apply = () => {
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border">
         <div className="absolute inset-0 bg-gradient-dark" aria-hidden />
+        {/* Animated orbs */}
         <motion.div
           aria-hidden
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-          className="absolute -right-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-primary/30 blur-3xl"
+          transition={{ duration: 1.4, ease: "easeOut" }}
+          className="absolute -right-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-primary/25 blur-[80px]"
         />
         <motion.div
           aria-hidden
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1.5, delay: 0.3 }}
-          className="absolute -left-20 bottom-0 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
+          transition={{ duration: 1.8, delay: 0.2 }}
+          className="absolute -left-24 bottom-0 h-80 w-80 rounded-full bg-primary/15 blur-[60px]"
         />
-        <div className="relative mx-auto max-w-5xl px-4 py-14 md:py-20">
+        <motion.div
+          aria-hidden
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.6 }}
+          transition={{ duration: 2, delay: 0.5 }}
+          className="absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/8 blur-[100px]"
+        />
+
+        <div className="relative mx-auto max-w-5xl px-4 py-16 md:py-24">
+          {/* Badge */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-medium text-primary backdrop-blur"
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary backdrop-blur"
           >
-            <Sparkles className="h-3.5 w-3.5" /> Curated · Application only
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
+            Curated · Application only
           </motion.div>
+
+          {/* Heading */}
           <motion.h1
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.05 }}
-            className="font-display text-4xl font-bold leading-[1.05] text-background md:text-6xl lg:text-7xl"
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className="font-display text-5xl font-bold leading-[1.03] text-background md:text-7xl lg:text-8xl"
           >
-            Find your people in the{" "}
-            <span className="bg-gradient-gold bg-clip-text text-transparent">HYVE</span>.
+            Find your people{" "}
+            <br className="hidden sm:block" />
+            in the{" "}
+            <span className="bg-gradient-gold bg-clip-text text-transparent">HYVE</span>
+            <span className="text-primary">.</span>
           </motion.h1>
+
+          {/* Subtitle */}
           <motion.p
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.15 }}
-            className="mt-5 max-w-xl text-lg text-background/70 md:text-xl"
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="mt-6 max-w-lg text-lg font-light leading-relaxed text-background/60 md:text-xl"
           >
             A WhatsApp community of freelance designers, developers, writers, and marketers
             shipping real work for real clients.
           </motion.p>
+
+          {/* Stats */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.25 }}
-            className="mt-8 flex flex-wrap items-center gap-6 text-sm text-background/60"
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="mt-10 flex flex-wrap items-center gap-3"
           >
-            <Stat value="136+" label="Active members" />
-            <Stat value="7+" label="Cities" />
-            <Stat value="2 min" label="To apply" />
+            <StatPill icon={Users} value="136+" label="Active members" />
+            <StatPill icon={Globe} value="7+" label="Cities" />
+            <StatPill icon={Clock} value="2 min" label="To apply" />
           </motion.div>
         </div>
       </section>
 
-      {/* Form */}
-      <section id="apply" className="mx-auto max-w-2xl px-4 py-12 md:py-16">
+      {/* Form Section */}
+      <section id="apply" className="mx-auto max-w-2xl px-4 py-14 md:py-20">
+
         {/* Progress */}
-        <div className="mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-8"
+        >
           <div className="mb-3 flex items-center justify-between text-xs font-medium text-muted-foreground">
             <span>
               Step {step + 1} of {steps.length} ·{" "}
-              <span className="text-foreground">{steps[step].name}</span>
+              <span className="font-semibold text-foreground">{steps[step].name}</span>
             </span>
-            <span>{Math.round(progress)}%</span>
+            <span className="tabular-nums font-semibold text-primary">{Math.round(progress)}%</span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+
+          {/* Progress bar */}
+          <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-border">
             <motion.div
               className="h-full rounded-full bg-gradient-gold"
               initial={false}
               animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
+              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
             />
           </div>
-          <div className="mt-4 hidden grid-cols-4 gap-2 sm:grid">
+
+          {/* Step tabs */}
+          <div className="mt-5 hidden grid-cols-4 gap-2 sm:grid">
             {steps.map((s, i) => {
               const Icon = s.icon;
               const active = i === step;
               const complete = i < step;
               return (
-                <button
+                <motion.button
                   key={s.id}
                   type="button"
                   onClick={() => i < step && setStep(i)}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs transition ${
+                  whileHover={i < step ? { scale: 1.02 } : {}}
+                  whileTap={i < step ? { scale: 0.98 } : {}}
+                  className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-xs transition-all duration-200 ${
                     active
-                      ? "border-primary/60 bg-primary/10 text-foreground"
+                      ? "border-primary/50 bg-gradient-to-br from-primary/10 to-primary/5 text-foreground shadow-sm"
                       : complete
-                        ? "border-border bg-card text-muted-foreground hover:text-foreground"
-                        : "border-border/50 bg-transparent text-muted-foreground/60"
+                        ? "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground cursor-pointer"
+                        : "border-border/40 bg-transparent text-muted-foreground/50 cursor-default"
                   }`}
                 >
                   <span
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] transition-all ${
                       complete
                         ? "bg-primary text-primary-foreground"
                         : active
                           ? "bg-primary/20 text-primary"
-                          : "bg-muted"
+                          : "bg-muted text-muted-foreground/60"
                     }`}
                   >
-                    {complete ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
+                    {complete ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Icon className="h-3 w-3" />}
                   </span>
                   <span className="truncate font-medium">{s.name}</span>
-                </button>
+                </motion.button>
               );
             })}
           </div>
-        </div>
+        </motion.div>
 
         {/* Card */}
-        <div className="relative rounded-3xl border border-border bg-card p-6 shadow-soft md:p-10">
-          {/* gold accent corner */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="relative rounded-3xl border border-border bg-card shadow-soft overflow-hidden"
+        >
+          {/* Top accent bar */}
+          <div className="h-0.5 w-full bg-gradient-gold" />
+
+          {/* Corner glow */}
           <div
             aria-hidden
-            className="pointer-events-none absolute -right-px -top-px h-24 w-24 rounded-tr-3xl bg-gradient-to-bl from-primary/25 to-transparent"
+            className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/10 blur-2xl"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -left-8 bottom-0 h-32 w-32 rounded-full bg-primary/5 blur-2xl"
           />
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (step < steps.length - 1) next();
-              else submit();
-            }}
-            className="relative"
-          >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, x: 24 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -24 }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
-                className="space-y-6"
-              >
-                {step === 0 && <StepAbout form={form} set={set} errors={errors} />}
-                {step === 1 && (
-                  <StepCraft
-                    form={form}
-                    set={set}
-                    errors={errors}
-                    onPickOther={openOtherDialog}
-                  />
-                )}
-                {step === 2 && (
-                  <StepWork
-                    form={form}
-                    set={set}
-                    errors={errors}
-                    resume={resume}
-                    resumeError={resumeError}
-                    onResume={handleResume}
-                  />
-                )}
-                {step === 3 && <StepStory form={form} set={set} errors={errors} />}
-              </motion.div>
-            </AnimatePresence>
-
-            {/* Nav */}
-            <div className="mt-10 flex items-center justify-between gap-3 border-t border-border pt-6">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={back}
-                disabled={step === 0}
-                className="text-muted-foreground"
-              >
-                <ArrowLeft className="mr-1 h-4 w-4" /> Back
-              </Button>
-
-              {step < steps.length - 1 ? (
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="bg-foreground text-background shadow-soft hover:bg-foreground/90"
+          <div className="relative p-6 md:p-10">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (step < steps.length - 1) next();
+                else submit();
+              }}
+            >
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={step}
+                  initial={{ opacity: 0, x: 32 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -32 }}
+                  transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+                  className="space-y-6"
                 >
-                  Continue <ArrowRight className="ml-1 h-4 w-4" />
-                </Button>
-              ) : (
-                <Button
-                  type="submit"
-                  size="lg"
-                  disabled={loading}
-                  className="bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-95"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting…
-                    </>
-                  ) : (
-                    <>
-                      Submit application <ArrowRight className="ml-1 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-          </form>
-        </div>
+                  {step === 0 && <StepAbout form={form} set={set} errors={errors} />}
+                  {step === 1 && <StepCraft form={form} set={set} errors={errors} onPickOther={openOtherDialog} />}
+                  {step === 2 && <StepWork form={form} set={set} errors={errors} resume={resume} resumeError={resumeError} onResume={handleResume} />}
+                  {step === 3 && <StepStory form={form} set={set} errors={errors} />}
+                </motion.div>
+              </AnimatePresence>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          We read every application personally · Replies on WhatsApp within a few days
-        </p>
+              {/* Nav */}
+              <div className="mt-10 flex items-center justify-between gap-3 border-t border-border pt-6">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={back}
+                  disabled={step === 0}
+                  className="gap-1.5 text-muted-foreground hover:text-foreground disabled:opacity-0"
+                >
+                  <ArrowLeft className="h-4 w-4" /> Back
+                </Button>
+
+                {step < steps.length - 1 ? (
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      type="submit"
+                      size="lg"
+                      className="gap-2 bg-foreground px-8 text-background shadow-md hover:bg-foreground/90"
+                    >
+                      Continue <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </motion.div>
+                ) : (
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      type="submit"
+                      size="lg"
+                      disabled={loading}
+                      className="gap-2 bg-gradient-gold px-8 text-primary-foreground shadow-gold hover:opacity-95"
+                    >
+                      {loading ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</>
+                      ) : (
+                        <><Zap className="h-4 w-4" /> Submit application</>
+                      )}
+                    </Button>
+                  </motion.div>
+                )}
+              </div>
+            </form>
+          </div>
+        </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="mt-5 text-center text-xs text-muted-foreground"
+        >
+          ✦ We read every application personally · Replies on WhatsApp within a few days
+        </motion.p>
       </section>
 
-      {/* Other specialization dialog */}
+      {/* Other dialog */}
       <Dialog open={otherDialogOpen} onOpenChange={setOtherDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display">What's your specialization?</DialogTitle>
-            <DialogDescription>
-              Tell us in a few words — e.g. Motion design, Data engineering, Brand strategy.
-            </DialogDescription>
+            <DialogDescription>Tell us in a few words — e.g. Motion design, Data engineering, Brand strategy.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <Label htmlFor="other-spec" className="text-sm font-medium">
-              Specialization
-            </Label>
+            <Label htmlFor="other-spec" className="text-sm font-medium">Specialization</Label>
             <Input
               id="other-spec"
               value={otherDraft}
@@ -494,33 +485,14 @@ const Apply = () => {
               placeholder="e.g. Motion design"
               maxLength={100}
               autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  confirmOther();
-                }
-              }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmOther(); } }}
               className="h-11"
             />
-            {errors.other_specialization && (
-              <p className="text-xs text-destructive">{errors.other_specialization}</p>
-            )}
+            {errors.other_specialization && <p className="text-xs text-destructive">{errors.other_specialization}</p>}
           </div>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setOtherDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={confirmOther}
-              className="bg-gradient-gold text-primary-foreground hover:opacity-95"
-            >
-              Save
-            </Button>
+            <Button type="button" variant="ghost" onClick={() => setOtherDialogOpen(false)}>Cancel</Button>
+            <Button type="button" onClick={confirmOther} className="bg-gradient-gold text-primary-foreground hover:opacity-95">Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -528,162 +500,101 @@ const Apply = () => {
   );
 };
 
-/* ---------- Steps ---------- */
+/* ─── Steps ─────────────────────────────────────────────── */
 
 type StepProps = {
   form: FormState;
   set: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
   errors: Record<string, string>;
 };
-
 type CraftStepProps = StepProps & { onPickOther: () => void };
-
-type WorkStepProps = StepProps & {
-  resume: File | null;
-  resumeError: string;
-  onResume: (file: File | null) => void;
-};
+type WorkStepProps = StepProps & { resume: File | null; resumeError: string; onResume: (f: File | null) => void };
 
 const StepAbout = ({ form, set, errors }: StepProps) => (
-  <div className="space-y-6">
-    <StepHeader
-      eyebrow="01 — About you"
-      title="Let's start with the basics"
-      desc="Tell us who you are and where to reach you."
-    />
+  <div className="space-y-5">
+    <StepHeader eyebrow="01 — About you" title="Let's start with the basics" desc="Tell us who you are and where to reach you." />
     <Field label="Full name" error={errors.full_name} icon={User}>
-      <Input
-        value={form.full_name}
-        onChange={(e) => set("full_name", e.target.value)}
-        placeholder="Jane Doe"
-        maxLength={100}
-        className="h-12 pl-10"
-      />
+      <Input value={form.full_name} onChange={(e) => set("full_name", e.target.value)} placeholder="Jane Doe" maxLength={100} className="h-12 pl-10 transition-all focus:ring-2 focus:ring-primary/20" />
     </Field>
-    <Field
-      label="WhatsApp number"
-      error={errors.whatsapp_number}
-      icon={Phone}
-      hint="Include country code — this is how we'll reach you."
-    >
-      <Input
-        value={form.whatsapp_number}
-        onChange={(e) => set("whatsapp_number", e.target.value)}
-        placeholder="+91 98765 43210"
-        maxLength={20}
-        inputMode="tel"
-        className="h-12 pl-10"
-      />
+    <Field label="WhatsApp number" error={errors.whatsapp_number} icon={Phone} hint="Include country code — this is how we'll reach you.">
+      <Input value={form.whatsapp_number} onChange={(e) => set("whatsapp_number", e.target.value)} placeholder="+91 98765 43210" maxLength={20} inputMode="tel" className="h-12 pl-10 transition-all focus:ring-2 focus:ring-primary/20" />
     </Field>
     <Field label="City" error={errors.city} icon={MapPin}>
-      <Input
-        value={form.city}
-        onChange={(e) => set("city", e.target.value)}
-        placeholder="Bengaluru"
-        maxLength={100}
-        className="h-12 pl-10"
-      />
+      <Input value={form.city} onChange={(e) => set("city", e.target.value)} placeholder="Bengaluru" maxLength={100} className="h-12 pl-10 transition-all focus:ring-2 focus:ring-primary/20" />
     </Field>
   </div>
 );
 
 const StepCraft = ({ form, set, errors, onPickOther }: CraftStepProps) => (
   <div className="space-y-8">
-    <StepHeader
-      eyebrow="02 — Your craft"
-      title="What do you do best?"
-      desc="Pick your primary skill — you can add more later."
-    />
-
+    <StepHeader eyebrow="02 — Your craft" title="What do you do best?" desc="Pick your primary skill — you can add more later." />
     <div>
-      <Label className="mb-3 block text-sm font-medium">Primary skill</Label>
+      <Label className="mb-3 block text-sm font-semibold">Primary skill</Label>
       <div className="grid gap-3 sm:grid-cols-2">
         {skills.map((s) => {
           const Icon = skillMeta[s].icon;
           const active = form.primary_skill === s;
           const isOther = s === "Other";
           return (
-            <button
+            <motion.button
               key={s}
               type="button"
-              onClick={() => {
-                if (isOther) {
-                  onPickOther();
-                } else {
-                  set("primary_skill", s);
-                  set("other_specialization", "");
-                }
-              }}
-              className={`group relative flex items-start gap-3 rounded-xl border p-4 text-left transition ${
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => { if (isOther) { onPickOther(); } else { set("primary_skill", s); set("other_specialization", ""); } }}
+              className={`group relative flex items-start gap-3 rounded-2xl border bg-gradient-to-br p-4 text-left transition-all duration-200 ${
                 active
-                  ? "border-primary bg-primary/5 shadow-soft"
-                  : "border-border bg-card hover:border-primary/50 hover:bg-primary/5"
+                  ? `${skillMeta[s].color} shadow-sm`
+                  : `border-border bg-card hover:border-primary/30 hover:bg-primary/5`
               }`}
             >
-              <span
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition ${
-                  active ? "bg-gradient-gold text-primary-foreground" : "bg-muted text-foreground"
-                }`}
-              >
+              <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all ${active ? "bg-gradient-gold text-primary-foreground shadow-gold" : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"}`}>
                 <Icon className="h-5 w-5" />
               </span>
-              <span className="flex-1">
+              <span className="flex-1 pt-0.5">
                 <span className="block text-sm font-semibold">{s}</span>
-                <span className="block text-xs text-muted-foreground">
-                  {isOther && active && form.other_specialization
-                    ? form.other_specialization
-                    : skillMeta[s].tag}
+                <span className="block text-xs text-muted-foreground mt-0.5">
+                  {isOther && active && form.other_specialization ? form.other_specialization : skillMeta[s].tag}
                 </span>
               </span>
               {active && (
-                <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-primary" />
+                <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute right-3 top-3">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                </motion.span>
               )}
-            </button>
+            </motion.button>
           );
         })}
       </div>
       {form.primary_skill === "Other" && (
-        <button
-          type="button"
-          onClick={onPickOther}
-          className="mt-2 text-xs font-medium text-primary hover:underline"
-        >
-          {form.other_specialization ? "Edit specialization" : "Add specialization"}
+        <button type="button" onClick={onPickOther} className="mt-2 text-xs font-semibold text-primary hover:underline">
+          {form.other_specialization ? "✎ Edit specialization" : "+ Add specialization"}
         </button>
       )}
-      {errors.primary_skill && (
-        <p className="mt-2 text-xs text-destructive">{errors.primary_skill}</p>
-      )}
-      {errors.other_specialization && (
-        <p className="mt-2 text-xs text-destructive">{errors.other_specialization}</p>
-      )}
+      {errors.other_specialization && <p className="mt-2 text-xs text-destructive">{errors.other_specialization}</p>}
     </div>
-
     <div>
-      <Label className="mb-3 block text-sm font-medium">Years of experience</Label>
+      <Label className="mb-3 block text-sm font-semibold">Years of experience</Label>
       <div className="grid gap-3 sm:grid-cols-3">
         {experiences.map((e) => {
           const active = form.experience === e;
           return (
-            <button
+            <motion.button
               key={e}
               type="button"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => set("experience", e)}
-              className={`rounded-xl border p-4 text-left transition ${
-                active
-                  ? "border-primary bg-primary/5 shadow-soft"
-                  : "border-border bg-card hover:border-primary/50 hover:bg-primary/5"
-              }`}
+              className={`rounded-2xl border p-4 text-left transition-all duration-200 ${active ? "border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-sm" : "border-border bg-card hover:border-primary/30 hover:bg-primary/5"}`}
             >
+              <div className="text-xl mb-1">{expMeta[e].emoji}</div>
               <div className="text-sm font-semibold">{expMeta[e].label}</div>
               <div className="mt-0.5 text-xs text-muted-foreground">{expMeta[e].sub}</div>
-            </button>
+            </motion.button>
           );
         })}
       </div>
-      {errors.experience && (
-        <p className="mt-2 text-xs text-destructive">{errors.experience}</p>
-      )}
+      {errors.experience && <p className="mt-2 text-xs text-destructive">{errors.experience}</p>}
     </div>
   </div>
 );
@@ -692,92 +603,50 @@ const StepWork = ({ form, set, errors, resume, resumeError, onResume }: WorkStep
   const inputRef = useRef<HTMLInputElement>(null);
   return (
     <div className="space-y-6">
-      <StepHeader
-        eyebrow="03 — Your work"
-        title="Show us what you've built"
-        desc="Optional, but a portfolio helps us get to know you faster."
-      />
+      <StepHeader eyebrow="03 — Your work" title="Show us what you've built" desc="Optional, but a portfolio helps us get to know you faster." />
       <Field label="Portfolio URL" optional error={errors.portfolio_url} icon={Link2}>
-        <Input
-          value={form.portfolio_url}
-          onChange={(e) => set("portfolio_url", e.target.value)}
-          placeholder="https://yourwork.com"
-          maxLength={300}
-          className="h-12 pl-10"
-        />
+        <Input value={form.portfolio_url} onChange={(e) => set("portfolio_url", e.target.value)} placeholder="https://yourwork.com" maxLength={300} className="h-12 pl-10" />
       </Field>
       <Field label="LinkedIn URL" optional error={errors.linkedin_url} icon={Linkedin}>
-        <Input
-          value={form.linkedin_url}
-          onChange={(e) => set("linkedin_url", e.target.value)}
-          placeholder="https://linkedin.com/in/you"
-          maxLength={300}
-          className="h-12 pl-10"
-        />
+        <Input value={form.linkedin_url} onChange={(e) => set("linkedin_url", e.target.value)} placeholder="https://linkedin.com/in/you" maxLength={300} className="h-12 pl-10" />
       </Field>
-
-      {/* Resume upload */}
-      <div className="space-y-1.5">
-        <Label className="text-sm font-medium">
-          Resume <span className="font-normal text-muted-foreground">(optional)</span>
-        </Label>
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          className="hidden"
-          onChange={(e) => onResume(e.target.files?.[0] ?? null)}
-        />
+      <div className="space-y-2">
+        <Label className="text-sm font-semibold">Resume <span className="font-normal text-muted-foreground">(optional)</span></Label>
+        <input ref={inputRef} type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={(e) => onResume(e.target.files?.[0] ?? null)} />
         {!resume ? (
-          <button
+          <motion.button
             type="button"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
             onClick={() => inputRef.current?.click()}
-            className="flex w-full items-center gap-4 rounded-xl border-2 border-dashed border-border bg-muted/30 px-5 py-6 text-left transition hover:border-primary/60 hover:bg-primary/5"
+            className="flex w-full items-center gap-4 rounded-2xl border-2 border-dashed border-border bg-muted/30 px-6 py-7 text-left transition-all hover:border-primary/50 hover:bg-primary/5"
           >
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-gold text-primary-foreground">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-gold text-primary-foreground shadow-gold">
               <Upload className="h-5 w-5" />
             </span>
             <span className="flex-1">
-              <span className="block text-sm font-semibold text-foreground">
-                Upload your resume
-              </span>
-              <span className="block text-xs text-muted-foreground">
-                PDF or Word · Max 5 MB
-              </span>
+              <span className="block text-sm font-semibold text-foreground">Upload your resume</span>
+              <span className="block text-xs text-muted-foreground mt-0.5">PDF or Word · Max 5 MB</span>
             </span>
-          </button>
+          </motion.button>
         ) : (
-          <div className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/5 p-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-gold text-primary-foreground">
+          <div className="flex items-center gap-3 rounded-2xl border border-primary/40 bg-primary/5 p-4">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-gold text-primary-foreground">
               <FileText className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">{resume.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {(resume.size / 1024 / 1024).toFixed(2)} MB
-              </p>
+              <p className="text-xs text-muted-foreground">{(resume.size / 1024 / 1024).toFixed(2)} MB</p>
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                onResume(null);
-                if (inputRef.current) inputRef.current.value = "";
-              }}
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-              aria-label="Remove resume"
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={() => { onResume(null); if (inputRef.current) inputRef.current.value = ""; }} className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
               <X className="h-4 w-4" />
             </Button>
           </div>
         )}
         {resumeError && <p className="text-xs text-destructive">{resumeError}</p>}
       </div>
-
-      <div className="rounded-xl border border-dashed border-border bg-muted/40 p-4 text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">Tip:</span> Even a Notion page, GitHub repo, or
-        Instagram with your work counts. We care about the craft, not the polish.
+      <div className="rounded-2xl border border-dashed border-border bg-gradient-to-br from-muted/60 to-muted/30 p-4 text-xs text-muted-foreground">
+        <span className="font-semibold text-foreground">💡 Tip:</span> Even a Notion page, GitHub repo, or Instagram with your work counts. We care about the craft, not the polish.
       </div>
     </div>
   );
@@ -789,146 +658,65 @@ const StepStory = ({ form, set, errors }: StepProps) => {
   const [aiError, setAiError] = useState<string>("");
 
   const fetchSuggestions = async () => {
-    setLoadingAi(true);
-    setAiError("");
+    setLoadingAi(true); setAiError("");
     try {
       const { data, error } = await supabase.functions.invoke("suggest-why-join", {
-        body: {
-          full_name: form.full_name,
-          primary_skill: form.primary_skill,
-          other_specialization: form.other_specialization,
-          experience: form.experience,
-          city: form.city,
-          current_text: form.why_join,
-        },
+        body: { full_name: form.full_name, primary_skill: form.primary_skill, other_specialization: form.other_specialization, experience: form.experience, city: form.city, current_text: form.why_join },
       });
       if (error) throw error;
       const list = (data as { suggestions?: string[] } | null)?.suggestions ?? [];
-      if (!list.length) {
-        setAiError("No suggestions came back — try again.");
-      } else {
-        setSuggestions(list);
-      }
+      if (!list.length) { setAiError("No suggestions came back — try again."); } else { setSuggestions(list); }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Couldn't reach the AI";
-      setAiError(msg);
-    } finally {
-      setLoadingAi(false);
-    }
-  };
-
-  const useSuggestion = (text: string) => {
-    set("why_join", text);
-    setSuggestions([]);
+      setAiError(err instanceof Error ? err.message : "Couldn't reach the AI");
+    } finally { setLoadingAi(false); }
   };
 
   return (
     <div className="space-y-6">
-      <StepHeader
-        eyebrow="04 — Your story"
-        title="Why Hyve?"
-        desc="The most important question. Be honest, be you."
-      />
-
-      {/* AI assistant */}
-      <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/5 via-background to-background p-4 md:p-5">
+      <StepHeader eyebrow="04 — Your story" title="Why HYVE?" desc="The most important question. Be honest, be you." />
+      <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/8 via-background to-background p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-gold text-primary-foreground shadow-gold">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-gold text-primary-foreground shadow-gold">
               <Wand2 className="h-4 w-4" />
             </span>
             <div>
               <p className="text-sm font-semibold">Stuck? Let AI spark some ideas</p>
-              <p className="text-xs text-muted-foreground">
-                Personalised to your craft — pick one and edit, or use as a starting point.
-              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">Personalised to your craft — pick one and make it yours.</p>
             </div>
           </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={fetchSuggestions}
-            disabled={loadingAi}
-            className="shrink-0 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
-          >
-            {loadingAi ? (
-              <>
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Thinking
-              </>
-            ) : suggestions.length ? (
-              <>
-                <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Regenerate
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Suggest
-              </>
-            )}
+          <Button type="button" size="sm" variant="outline" onClick={fetchSuggestions} disabled={loadingAi} className="shrink-0 border-primary/40 text-primary hover:bg-primary/10">
+            {loadingAi ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Thinking</> : suggestions.length ? <><RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Regenerate</> : <><Sparkles className="mr-1.5 h-3.5 w-3.5" /> Suggest</>}
           </Button>
         </div>
-
-        {aiError && (
-          <p className="mt-3 text-xs text-destructive">{aiError}</p>
-        )}
-
+        {aiError && <p className="mt-3 text-xs text-destructive">{aiError}</p>}
         <AnimatePresence>
           {suggestions.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.25 }}
-              className="mt-4 space-y-2 overflow-hidden"
-            >
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }} className="mt-4 space-y-2 overflow-hidden">
               {suggestions.map((s, i) => (
-                <motion.button
-                  key={i}
-                  type="button"
-                  onClick={() => useSuggestion(s)}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.07 }}
-                  className="group flex w-full items-start gap-3 rounded-xl border border-border bg-card p-3 text-left transition hover:border-primary/60 hover:bg-primary/5"
-                >
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
-                    {i + 1}
-                  </span>
-                  <span className="flex-1 text-sm leading-relaxed text-foreground">{s}</span>
-                  <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground opacity-0 transition group-hover:opacity-100">
-                    Use
-                  </span>
+                <motion.button key={i} type="button" onClick={() => { set("why_join", s); setSuggestions([]); }} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }} className="group flex w-full items-start gap-3 rounded-xl border border-border bg-card p-3 text-left transition-all hover:border-primary/50 hover:bg-primary/5">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">{i + 1}</span>
+                  <span className="flex-1 text-sm leading-relaxed">{s}</span>
+                  <span className="mt-0.5 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground opacity-0 transition group-hover:opacity-100">Use →</span>
                 </motion.button>
               ))}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-
       <div className="space-y-1.5">
-        <Label className="text-sm font-medium">Why do you want to join?</Label>
-        <Textarea
-          value={form.why_join}
-          onChange={(e) => set("why_join", e.target.value)}
-          placeholder="What you'd bring to the community, what you're hoping to find, the kind of work you want to do…"
-          rows={7}
-          maxLength={2000}
-          className="resize-none text-base"
-        />
+        <Label className="text-sm font-semibold">Why do you want to join?</Label>
+        <Textarea value={form.why_join} onChange={(e) => set("why_join", e.target.value)} placeholder="What you'd bring to the community, what you're hoping to find, the kind of work you want to do…" rows={7} maxLength={2000} className="resize-none text-base transition-all focus:ring-2 focus:ring-primary/20" />
         <div className="flex items-center justify-between text-xs">
-          <span className={errors.why_join ? "text-destructive" : "text-muted-foreground"}>
-            {errors.why_join ?? "Min 10 characters"}
-          </span>
-          <span className="text-muted-foreground">{form.why_join.length}/2000</span>
+          <span className={errors.why_join ? "text-destructive" : "text-muted-foreground"}>{errors.why_join ?? "Min 10 characters"}</span>
+          <span className="tabular-nums text-muted-foreground">{form.why_join.length}/2000</span>
         </div>
       </div>
-
-      {/* Summary */}
       <div className="rounded-2xl border border-border bg-muted/40 p-5">
-        <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Quick review
+        <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> Quick review
         </div>
-        <dl className="grid gap-2 text-sm sm:grid-cols-2">
+        <dl className="grid gap-0 text-sm sm:grid-cols-2">
           <Summary label="Name" value={form.full_name || "—"} />
           <Summary label="WhatsApp" value={form.whatsapp_number || "—"} />
           <Summary label="City" value={form.city || "—"} />
@@ -940,68 +728,44 @@ const StepStory = ({ form, set, errors }: StepProps) => {
   );
 };
 
-/* ---------- Bits ---------- */
+/* ─── Bits ───────────────────────────────────────────────── */
 
 const StepHeader = ({ eyebrow, title, desc }: { eyebrow: string; title: string; desc: string }) => (
-  <div>
-    <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-      {eyebrow}
-    </div>
+  <div className="space-y-1.5">
+    <div className="text-xs font-bold uppercase tracking-[0.22em] text-primary">{eyebrow}</div>
     <h2 className="font-display text-2xl font-bold md:text-3xl">{title}</h2>
-    <p className="mt-1.5 text-sm text-muted-foreground md:text-base">{desc}</p>
+    <p className="text-sm text-muted-foreground md:text-base">{desc}</p>
   </div>
 );
 
-const Field = ({
-  label,
-  optional,
-  error,
-  hint,
-  icon: Icon,
-  children,
-}: {
-  label: string;
-  optional?: boolean;
-  error?: string;
-  hint?: string;
-  icon?: typeof User;
-  children: React.ReactNode;
-}) => (
+const Field = ({ label, optional, error, hint, icon: Icon, children }: { label: string; optional?: boolean; error?: string; hint?: string; icon?: typeof User; children: React.ReactNode }) => (
   <div className="space-y-1.5">
-    <Label className="text-sm font-medium">
-      {label}{" "}
-      {optional && <span className="font-normal text-muted-foreground">(optional)</span>}
-    </Label>
+    <Label className="text-sm font-semibold">{label}{" "}{optional && <span className="font-normal text-muted-foreground">(optional)</span>}</Label>
     <div className="relative">
-      {Icon && (
-        <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      )}
+      {Icon && <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />}
       {children}
     </div>
-    {error ? (
-      <p className="text-xs text-destructive">{error}</p>
-    ) : hint ? (
-      <p className="text-xs text-muted-foreground">{hint}</p>
-    ) : null}
+    {error ? <p className="text-xs text-destructive">{error}</p> : hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
   </div>
 );
 
 const Summary = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex items-baseline justify-between gap-3 border-b border-border/60 py-1.5 last:border-0 sm:border-0 sm:py-0">
+  <div className="flex items-baseline justify-between gap-3 border-b border-border/60 py-2 last:border-0 sm:border-0">
     <dt className="text-xs uppercase tracking-wider text-muted-foreground">{label}</dt>
-    <dd className="truncate text-sm font-medium text-foreground">{value}</dd>
+    <dd className="truncate text-sm font-semibold text-foreground">{value}</dd>
   </div>
 );
 
-const Stat = ({ value, label }: { value: string; label: string }) => (
-  <div>
-    <div className="font-display text-2xl font-bold text-background">{value}</div>
-    <div className="text-xs uppercase tracking-wider text-background/50">{label}</div>
+const StatPill = ({ icon: Icon, value, label }: { icon: typeof Users; value: string; label: string }) => (
+  <div className="flex items-center gap-2.5 rounded-full border border-background/20 bg-background/10 px-4 py-2 backdrop-blur">
+    <Icon className="h-3.5 w-3.5 text-primary" />
+    <span className="font-display text-base font-bold text-background">{value}</span>
+    <span className="text-xs uppercase tracking-wider text-background/50">{label}</span>
   </div>
 );
 
 const Header = () => (
-  <header className="border-b border-border bg-background">
+  <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50">
     <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
       <Link to="/">
         <img src="/logo.png" alt="Hyve" className="h-8 w-auto" />
@@ -1009,47 +773,32 @@ const Header = () => (
     </div>
   </header>
 );
-    
+
 const SuccessScreen = () => (
   <div className="min-h-screen bg-background">
     <Header />
-    <div className="relative mx-auto flex max-w-xl flex-col items-center px-4 py-20 text-center">
+    <div className="relative mx-auto flex max-w-xl flex-col items-center px-4 py-24 text-center">
       <motion.div
         initial={{ scale: 0, rotate: -45 }}
         animate={{ scale: 1, rotate: 0 }}
         transition={{ type: "spring", stiffness: 200, damping: 15 }}
-        className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-gold shadow-gold"
+        className="mb-8 flex h-28 w-28 items-center justify-center rounded-full bg-gradient-gold shadow-gold"
       >
-        <CheckCircle2 className="h-12 w-12 text-primary-foreground" />
+        <CheckCircle2 className="h-14 w-14 text-primary-foreground" />
       </motion.div>
-      <motion.h1
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="font-display text-3xl font-bold md:text-5xl"
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+        className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary"
       >
+        <Sparkles className="h-3.5 w-3.5" /> Application received
+      </motion.div>
+      <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="font-display text-4xl font-bold md:text-5xl">
         You're on the list
       </motion.h1>
-      <motion.p
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="mt-4 text-muted-foreground md:text-lg"
-      >
-        Thanks for applying to Hyve. We review every application personally — you'll hear from us
-        on WhatsApp within a few days.
+      <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-5 leading-relaxed text-muted-foreground md:text-lg">
+        Thanks for applying to HYVE. We review every application personally — you'll hear from us on WhatsApp within a few days.
       </motion.p>
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="mt-8"
-      >
-        <Link to="/">
-          <Button variant="outline" size="lg">
-            Back to home
-          </Button>
-        </Link>
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mt-10">
+        <Link to="/"><Button variant="outline" size="lg" className="gap-2"><ArrowLeft className="h-4 w-4" /> Back to home</Button></Link>
       </motion.div>
     </div>
   </div>
