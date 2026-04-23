@@ -38,6 +38,8 @@ import {
   FileText,
   Upload,
   X,
+  Wand2,
+  RefreshCw,
 } from "lucide-react";
 
 const skills = ["UI/UX", "Development", "Content Writing", "Digital Marketing", "Other"] as const;
@@ -781,46 +783,162 @@ const StepWork = ({ form, set, errors, resume, resumeError, onResume }: WorkStep
   );
 };
 
-const StepStory = ({ form, set, errors }: StepProps) => (
-  <div className="space-y-6">
-    <StepHeader
-      eyebrow="04 — Your story"
-      title="Why Hyve?"
-      desc="The most important question. Be honest, be you."
-    />
-    <div className="space-y-1.5">
-      <Label className="text-sm font-medium">Why do you want to join?</Label>
-      <Textarea
-        value={form.why_join}
-        onChange={(e) => set("why_join", e.target.value)}
-        placeholder="What you'd bring to the community, what you're hoping to find, the kind of work you want to do…"
-        rows={7}
-        maxLength={2000}
-        className="resize-none text-base"
-      />
-      <div className="flex items-center justify-between text-xs">
-        <span className={errors.why_join ? "text-destructive" : "text-muted-foreground"}>
-          {errors.why_join ?? "Min 10 characters"}
-        </span>
-        <span className="text-muted-foreground">{form.why_join.length}/2000</span>
-      </div>
-    </div>
+const StepStory = ({ form, set, errors }: StepProps) => {
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loadingAi, setLoadingAi] = useState(false);
+  const [aiError, setAiError] = useState<string>("");
 
-    {/* Summary */}
-    <div className="rounded-2xl border border-border bg-muted/40 p-5">
-      <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        Quick review
+  const fetchSuggestions = async () => {
+    setLoadingAi(true);
+    setAiError("");
+    try {
+      const { data, error } = await supabase.functions.invoke("suggest-why-join", {
+        body: {
+          full_name: form.full_name,
+          primary_skill: form.primary_skill,
+          other_specialization: form.other_specialization,
+          experience: form.experience,
+          city: form.city,
+          current_text: form.why_join,
+        },
+      });
+      if (error) throw error;
+      const list = (data as { suggestions?: string[] } | null)?.suggestions ?? [];
+      if (!list.length) {
+        setAiError("No suggestions came back — try again.");
+      } else {
+        setSuggestions(list);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Couldn't reach the AI";
+      setAiError(msg);
+    } finally {
+      setLoadingAi(false);
+    }
+  };
+
+  const useSuggestion = (text: string) => {
+    set("why_join", text);
+    setSuggestions([]);
+  };
+
+  return (
+    <div className="space-y-6">
+      <StepHeader
+        eyebrow="04 — Your story"
+        title="Why Hyve?"
+        desc="The most important question. Be honest, be you."
+      />
+
+      {/* AI assistant */}
+      <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/5 via-background to-background p-4 md:p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-gold text-primary-foreground shadow-gold">
+              <Wand2 className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">Stuck? Let AI spark some ideas</p>
+              <p className="text-xs text-muted-foreground">
+                Personalised to your craft — pick one and edit, or use as a starting point.
+              </p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={fetchSuggestions}
+            disabled={loadingAi}
+            className="shrink-0 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+          >
+            {loadingAi ? (
+              <>
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Thinking
+              </>
+            ) : suggestions.length ? (
+              <>
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Regenerate
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Suggest
+              </>
+            )}
+          </Button>
+        </div>
+
+        {aiError && (
+          <p className="mt-3 text-xs text-destructive">{aiError}</p>
+        )}
+
+        <AnimatePresence>
+          {suggestions.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25 }}
+              className="mt-4 space-y-2 overflow-hidden"
+            >
+              {suggestions.map((s, i) => (
+                <motion.button
+                  key={i}
+                  type="button"
+                  onClick={() => useSuggestion(s)}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.07 }}
+                  className="group flex w-full items-start gap-3 rounded-xl border border-border bg-card p-3 text-left transition hover:border-primary/60 hover:bg-primary/5"
+                >
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 text-sm leading-relaxed text-foreground">{s}</span>
+                  <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground opacity-0 transition group-hover:opacity-100">
+                    Use
+                  </span>
+                </motion.button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-      <dl className="grid gap-2 text-sm sm:grid-cols-2">
-        <Summary label="Name" value={form.full_name || "—"} />
-        <Summary label="WhatsApp" value={form.whatsapp_number || "—"} />
-        <Summary label="City" value={form.city || "—"} />
-        <Summary label="Skill" value={form.primary_skill} />
-        <Summary label="Experience" value={`${form.experience} years`} />
-      </dl>
+
+      <div className="space-y-1.5">
+        <Label className="text-sm font-medium">Why do you want to join?</Label>
+        <Textarea
+          value={form.why_join}
+          onChange={(e) => set("why_join", e.target.value)}
+          placeholder="What you'd bring to the community, what you're hoping to find, the kind of work you want to do…"
+          rows={7}
+          maxLength={2000}
+          className="resize-none text-base"
+        />
+        <div className="flex items-center justify-between text-xs">
+          <span className={errors.why_join ? "text-destructive" : "text-muted-foreground"}>
+            {errors.why_join ?? "Min 10 characters"}
+          </span>
+          <span className="text-muted-foreground">{form.why_join.length}/2000</span>
+        </div>
+      </div>
+
+      {/* Summary */}
+      <div className="rounded-2xl border border-border bg-muted/40 p-5">
+        <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Quick review
+        </div>
+        <dl className="grid gap-2 text-sm sm:grid-cols-2">
+          <Summary label="Name" value={form.full_name || "—"} />
+          <Summary label="WhatsApp" value={form.whatsapp_number || "—"} />
+          <Summary label="City" value={form.city || "—"} />
+          <Summary label="Skill" value={form.primary_skill} />
+          <Summary label="Experience" value={`${form.experience} years`} />
+        </dl>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* ---------- Bits ---------- */
 
