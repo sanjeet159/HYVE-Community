@@ -529,8 +529,25 @@ const StepAbout = ({ form, set, errors }: StepProps) => (
         />
       </div>
     </Field>
-    <Field label="City" error={errors.city} icon={MapPin}>
-      <Input value={form.city} onChange={(e) => set("city", e.target.value)} placeholder="Bengaluru" maxLength={100} className="h-12 pl-10 transition-all focus:ring-2 focus:ring-primary/20" />
+    <Field label="City" error={errors.city}>
+      <div className="relative">
+        <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <select
+          value={form.city}
+          onChange={(e) => set("city", e.target.value)}
+          className="h-12 w-full appearance-none rounded-md border border-input bg-background pl-10 pr-10 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+        >
+          <option value="" disabled>Select your city</option>
+          <option value="Bengaluru">Bengaluru</option>
+          <option value="Mumbai">Mumbai</option>
+          <option value="Delhi / NCR">Delhi / NCR</option>
+          <option value="Hyderabad">Hyderabad</option>
+          <option value="Pune">Pune</option>
+          <option value="Chennai">Chennai</option>
+          <option value="Ahmedabad">Ahmedabad</option>
+        </select>
+        <svg className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+      </div>
     </Field>
   </div>
 );
