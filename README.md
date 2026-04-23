@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# HYVE-Community
 
-TODO: Document your project here
+A React + TypeScript + Shadcn UI project.
