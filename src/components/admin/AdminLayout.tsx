@@ -1,8 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { HyveLogo } from "@/components/HyveLogo";
 import { LayoutDashboard, Users, BarChart3, LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,37 +17,18 @@ export const AdminLayout = ({ children }: { children: ReactNode }) => {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-    const check = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/admin/login", { replace: true });
-        return;
-      }
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      if (!data) {
-        await supabase.auth.signOut();
-        navigate("/admin/login", { replace: true });
-        return;
-      }
-      if (mounted) setChecking(false);
-    };
-    check();
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (!session) navigate("/admin/login", { replace: true });
-    });
-    return () => { mounted = false; sub.subscription.unsubscribe(); };
+    const isAdmin = localStorage.getItem("hyve_admin");
+    if (!isAdmin) {
+      navigate("/admin/login", { replace: true });
+    } else {
+      setChecking(false);
+    }
   }, [navigate]);
 
   useEffect(() => { setOpen(false); }, [location.pathname]);
 
-  const logout = async () => {
-    await supabase.auth.signOut();
+  const logout = () => {
+    localStorage.removeItem("hyve_admin");
     navigate("/admin/login");
   };
 
@@ -63,10 +42,11 @@ export const AdminLayout = ({ children }: { children: ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
         <div className="flex h-16 items-center justify-between px-4 md:px-8">
-          <Link to="/admin"><HyveLogo /></Link>
+          <Link to="/admin">
+            <img src="/logo.png" alt="Hyve" className="h-8 w-auto" />
+          </Link>
           <nav className="hidden items-center gap-1 md:flex">
             {nav.map(({ to, label, icon: Icon, end }) => (
               <NavLink
