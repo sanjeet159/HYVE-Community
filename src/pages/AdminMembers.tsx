@@ -79,7 +79,6 @@ const AdminMembers = () => {
             <Download className="mr-2 h-4 w-4" /> Export CSV ({filtered.length})
           </Button>
         </div>
-
         <div className="mb-4 flex flex-col gap-3 md:flex-row">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -100,7 +99,6 @@ const AdminMembers = () => {
             </SelectContent>
           </Select>
         </div>
-
         {loading ? (
           <div className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground shadow-soft">Loading...</div>
         ) : filtered.length === 0 ? (
