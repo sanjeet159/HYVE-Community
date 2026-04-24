@@ -903,9 +903,9 @@ const SuccessScreen = () => (
           transition={{ delay: 0.75 }}
           className="mt-12 flex flex-col items-center gap-3 sm:flex-row"
         >
-          <a href="https://hyvefreelance.com" target="_blank" rel="noreferrer">
+          <a href="https://hyvefreelance.com">
             <Button size="lg" className="gap-2 bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90">
-              <ArrowLeft className="h-4 w-4" /> Back to Hyve
+              <ArrowLeft className="h-4 w-4" /> Back to home
             </Button>
           </a>
           <a href="https://blog.hyvefreelance.com" target="_blank" rel="noreferrer">
