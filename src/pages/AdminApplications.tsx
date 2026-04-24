@@ -206,7 +206,16 @@ const AdminApplications = () => {
       <Dialog open={!!approved} onOpenChange={(o) => !o && setApproved(null)}>
         <DialogContent className="max-w-lg">
           {approved && (
-            <ApprovalTemplate app={approved} onClose={() => setApproved(null)} />
+            <MessageTemplate kind="approved" app={approved} onClose={() => setApproved(null)} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Rejection template dialog */}
+      <Dialog open={!!rejected} onOpenChange={(o) => !o && setRejected(null)}>
+        <DialogContent className="max-w-lg">
+          {rejected && (
+            <MessageTemplate kind="rejected" app={rejected} onClose={() => setRejected(null)} />
           )}
         </DialogContent>
       </Dialog>
