@@ -46,8 +46,7 @@ const AdminAnalytics = () => {
   const cityData = useMemo(() => {
     const map = new Map<string, number>();
     rows.forEach((r) => map.set(r.city, (map.get(r.city) ?? 0) + 1));
-    return Array.from(map, ([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value).slice(0, 8);
+    return Array.from(map, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 8);
   }, [rows]);
 
   return (
@@ -57,13 +56,11 @@ const AdminAnalytics = () => {
           <h1 className="font-display text-3xl font-bold">Analytics</h1>
           <p className="mt-1 text-muted-foreground">An overview of community growth and composition.</p>
         </div>
-
         <div className="mb-6 grid gap-4 sm:grid-cols-3">
           <StatCard icon={Users} label="Total applications" value={stats.total} />
           <StatCard icon={UserCheck} label="Approved members" value={stats.approved} accent />
           <StatCard icon={CalendarDays} label="This week" value={stats.week} />
         </div>
-
         {loading ? (
           <div className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground shadow-soft">Loading...</div>
         ) : rows.length === 0 ? (
@@ -95,7 +92,6 @@ const AdminAnalytics = () => {
                 </ul>
               </div>
             </Card>
-
             <Card title="Top cities">
               <div className="h-72 w-full">
                 <ResponsiveContainer>
