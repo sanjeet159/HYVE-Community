@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { Search, Check, X, Copy, ExternalLink, MessageCircle, Phone, MapPin, Briefcase, Clock, FileText, Linkedin, Globe, Calendar } from "lucide-react";
+import { Search, Check, X, Copy, ExternalLink, MessageCircle, Phone, MapPin, Briefcase, Clock, FileText, Linkedin, Globe, Calendar, Inbox, CheckCircle2, XCircle, Heart } from "lucide-react";
 
 type Status = "pending" | "approved" | "rejected";
 interface Application {
