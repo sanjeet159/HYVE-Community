@@ -287,8 +287,9 @@ const Apply = () => {
             transition={{ duration: 0.7, delay: 0.2 }}
             className="mt-6 max-w-lg text-lg font-light leading-relaxed text-background/60 md:text-xl"
           >
-            A WhatsApp community of freelance designers, developers, writers, and marketers
-            shipping real work for real clients.
+            Hey! Let's get to know you.
+            We read every application ourselves. No bots. No automated rejections.
+            Just real people deciding if this is the right fit.
           </motion.p>
 
           {/* Stats */}
