@@ -273,9 +273,9 @@ const Apply = () => {
             transition={{ duration: 0.7, delay: 0.1 }}
             className="font-display text-5xl font-bold leading-[1.03] text-background md:text-7xl lg:text-8xl"
           >
-            Find your people{" "}
+            Stop working alone.{" "}
             <br className="hidden sm:block" />
-            in the{" "}
+            Find your team in the{" "}
             <span className="bg-gradient-gold bg-clip-text text-transparent">HYVE</span>
             <span className="text-primary">.</span>
           </motion.h1>
