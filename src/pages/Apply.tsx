@@ -287,9 +287,8 @@ const Apply = () => {
             transition={{ duration: 0.7, delay: 0.2 }}
             className="mt-6 max-w-lg text-lg font-light leading-relaxed text-background/60 md:text-xl"
           >
-            Hey! Let's get to know you.
-            We read every application ourselves. No bots. No automated rejections.
-            Just real people deciding if this is the right fit.
+            No spam. No automated rejections. No corporate nonsense.
+            Just an honest response from the HYVE team within 48 hours.
           </motion.p>
 
           {/* Stats */}
