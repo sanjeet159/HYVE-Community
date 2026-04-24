@@ -32,10 +32,10 @@ interface Application {
 const skills = ["UI/UX", "Development", "Content Writing", "Digital Marketing", "Other"];
 
 const tpl = (name: string) =>
-  `Hey ${name}! \u{1F41D}\n\nYou're officially in the HYVE — welcome to the group!\n\nWe're a curated community of freelance designers, developers, writers & marketers shipping real work for real clients.\n\nA few things to get started:\n\u{1F64B} Drop a quick intro — who you are & what you do\n\u{1F4BC} Share your portfolio or something you've built\n\u{1F91D} Help others when you can — that's the HYVE way\n\nExcited to have you here. Let's build something great together! \u{1F7E1}\n\n— The HYVE Team\nhyvefreelance.com`;
+  `Hey ${name}! \u{1F41D}\n\nYou're officially in the HYVE — Welcome to the group!\n\nWe're a curated community of freelance designers, developers, writers & marketers shipping real work for real clients.\n\nA few things to get started:\n\u{1F64B} Drop a quick intro — who you are & what you do\n\u{1F4BC} Share your portfolio or something you've built\n\u{1F91D} Help others when you can — that's the HYVE way\n\nExcited to have you here. Let's build something great together! \u{1F7E1}\n\n— The HYVE Team\nhyvefreelance.com`;
 
 const rejectTpl = (name: string) =>
-  `Hey ${name},\n\nThank you so much for applying to Hyve and taking the time to share your story with us. 💛\n\nAfter careful review, we're unable to offer you a spot in the community at this moment. Hyve is a curated space, and we keep the group tightly aligned with where the community is right now — this isn't a reflection of your talent or potential.\n\nA few notes from our side:\n• Keep building your portfolio and putting your work out there\n• You're welcome to re-apply in the future as you grow\n• Follow us on hyvefreelance.com for resources and updates\n\nWishing you the very best on your journey.\n— The Hyve team`;
+  `Hey ${name},\n\nThank you so much for applying to HYVE and taking the time to share your story with us. 💛\n\nAfter careful review, we're unable to offer you a spot in the community at this moment. HYVE is a curated space, and we keep the group tightly aligned with where the community is right now — this isn't a reflection of your talent or potential.\n\nA few notes from our side:\n• Keep building your portfolio and putting your work out there\n• You're Welcome to re-apply in the future as you grow\n• Follow us on hyvefreelance.com for resources and updates\n\nWishing you the very best on your journey.\n— The HYVE team`;
 
 const AdminApplications = () => {
   const navigate = useNavigate();
@@ -50,7 +50,7 @@ const AdminApplications = () => {
 
   // Auth check — redirect if not logged in
   useEffect(() => {
-    const isAdmin = localStorage.getItem("hyve_admin");
+    const isAdmin = localStorage.getItem("HYVE_admin");
     if (!isAdmin) navigate("/admin/login", { replace: true });
   }, [navigate]);
 
@@ -110,7 +110,7 @@ const AdminApplications = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => { localStorage.removeItem("hyve_admin"); navigate("/admin/login"); }}
+              onClick={() => { localStorage.removeItem("HYVE_admin"); navigate("/admin/login"); }}
               className="text-xs text-muted-foreground"
             >
               Logout
@@ -248,7 +248,7 @@ const MessageTemplate = ({ kind, app, onClose }: { kind: "approved" | "rejected"
           <span className={`flex h-9 w-9 items-center justify-center rounded-full ${isApproved ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
             <Icon className="h-4 w-4" />
           </span>
-          <DialogTitle className="font-display text-2xl">{isApproved ? "Approved · Send welcome" : "Rejected · Send a kind note"}</DialogTitle>
+          <DialogTitle className="font-display text-2xl">{isApproved ? "Approved · Send Welcome" : "Rejected · Send a kind note"}</DialogTitle>
         </div>
         <DialogDescription>{isApproved ? "Copy the message below or open WhatsApp directly." : "Let the applicant know with care. Edit before sending if you'd like to personalize."}</DialogDescription>
       </DialogHeader>
