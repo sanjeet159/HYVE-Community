@@ -33,6 +33,9 @@ const skills = ["UI/UX", "Development", "Content Writing", "Digital Marketing", 
 const tpl = (name: string) =>
   `Hey ${name}! 🐝\n\nWelcome to Hyve — you're in!\n\nWe're a curated WhatsApp community of freelance designers, developers, writers, and marketers. Here's our group invite:\n\n[GROUP_INVITE_LINK]\n\nA few quick things:\n• Introduce yourself in the group when you join\n• Share your portfolio + what you're working on\n• Help others when you can — that's how Hyve thrives\n\nExcited to have you. 🟡\n— The Hyve team`;
 
+const rejectTpl = (name: string) =>
+  `Hey ${name},\n\nThank you so much for applying to Hyve and taking the time to share your story with us. 💛\n\nAfter careful review, we're unable to offer you a spot in the community at this moment. Hyve is a curated space, and we keep the group tightly aligned with where the community is right now — this isn't a reflection of your talent or potential.\n\nA few notes from our side:\n• Keep building your portfolio and putting your work out there\n• You're welcome to re-apply in the future as you grow\n• Follow us on hyvefreelance.com for resources and updates\n\nWishing you the very best on your journey.\n— The Hyve team`;
+
 const AdminApplications = () => {
   const [apps, setApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
