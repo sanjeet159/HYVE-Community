@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { Search, Check, X, Copy, ExternalLink, MessageCircle, Phone, MapPin, Briefcase, Clock, FileText, Linkedin, Globe, Calendar } from "lucide-react";
+import { Search, Check, X, Copy, ExternalLink, MessageCircle, Phone, MapPin, Briefcase, Clock, FileText, Linkedin, Globe, Calendar, Inbox, CheckCircle2, XCircle, Heart } from "lucide-react";
 
 type Status = "pending" | "approved" | "rejected";
 interface Application {
@@ -32,6 +33,9 @@ const skills = ["UI/UX", "Development", "Content Writing", "Digital Marketing", 
 const tpl = (name: string) =>
   `Hey ${name}! 🐝\n\nWelcome to Hyve — you're in!\n\nWe're a curated WhatsApp community of freelance designers, developers, writers, and marketers. Here's our group invite:\n\n[GROUP_INVITE_LINK]\n\nA few quick things:\n• Introduce yourself in the group when you join\n• Share your portfolio + what you're working on\n• Help others when you can — that's how Hyve thrives\n\nExcited to have you. 🟡\n— The Hyve team`;
 
+const rejectTpl = (name: string) =>
+  `Hey ${name},\n\nThank you so much for applying to Hyve and taking the time to share your story with us. 💛\n\nAfter careful review, we're unable to offer you a spot in the community at this moment. Hyve is a curated space, and we keep the group tightly aligned with where the community is right now — this isn't a reflection of your talent or potential.\n\nA few notes from our side:\n• Keep building your portfolio and putting your work out there\n• You're welcome to re-apply in the future as you grow\n• Follow us on hyvefreelance.com for resources and updates\n\nWishing you the very best on your journey.\n— The Hyve team`;
+
 const AdminApplications = () => {
   const [apps, setApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +43,7 @@ const AdminApplications = () => {
   const [status, setStatus] = useState<"all" | Status>("all");
   const [skill, setSkill] = useState<string>("all");
   const [approved, setApproved] = useState<Application | null>(null);
+  const [rejected, setRejected] = useState<Application | null>(null);
   const [viewing, setViewing] = useState<Application | null>(null);
 
   const load = async () => {
@@ -60,6 +65,7 @@ const AdminApplications = () => {
     }
     setApps((prev) => prev.map((a) => a.id === app.id ? { ...a, status: s } : a));
     if (s === "approved") setApproved({ ...app, status: s });
+    else if (s === "rejected") setRejected({ ...app, status: s });
     else toast({ title: `Application ${s}` });
   };
 
@@ -82,33 +88,38 @@ const AdminApplications = () => {
   return (
     <AdminLayout>
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold">Applications</h1>
-          <p className="mt-1 text-muted-foreground">Review and approve incoming community requests.</p>
+        {/* Page header */}
+        <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Applications</h1>
+            <p className="mt-1 text-muted-foreground">Review and approve incoming community requests.</p>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5">
+              <Inbox className="h-3.5 w-3.5 text-primary" />
+              <span className="font-medium text-foreground">{apps.length}</span> total
+            </span>
+          </div>
         </div>
 
-        <div className="mb-6 grid grid-cols-3 gap-3 md:gap-4">
-          <Stat label="Pending" value={counts.pending} tone="warning" />
-          <Stat label="Approved" value={counts.approved} tone="success" />
-          <Stat label="Rejected" value={counts.rejected} tone="muted" />
-        </div>
+        {/* Status tabs */}
+        <Tabs value={status} onValueChange={(v) => setStatus(v as typeof status)} className="mb-6">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl border border-border bg-card p-1.5 md:grid-cols-4">
+            <TabTrigger value="all" icon={Inbox} label="All" count={apps.length} tone="muted" />
+            <TabTrigger value="pending" icon={Clock} label="Pending" count={counts.pending} tone="warning" />
+            <TabTrigger value="approved" icon={CheckCircle2} label="Approved" count={counts.approved} tone="success" />
+            <TabTrigger value="rejected" icon={XCircle} label="Rejected" count={counts.rejected} tone="danger" />
+          </TabsList>
+        </Tabs>
 
+        {/* Search & filter */}
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Search by name or WhatsApp number" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input className="h-11 pl-9" placeholder="Search by name or WhatsApp number" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
-            <SelectTrigger className="md:w-44"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All status</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-            </SelectContent>
-          </Select>
           <Select value={skill} onValueChange={setSkill}>
-            <SelectTrigger className="md:w-52"><SelectValue placeholder="Skill" /></SelectTrigger>
+            <SelectTrigger className="h-11 md:w-52"><SelectValue placeholder="Skill" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All skills</SelectItem>
               {skills.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -127,19 +138,39 @@ const AdminApplications = () => {
           {loading ? (
             <div className="p-12 text-center text-muted-foreground">Loading...</div>
           ) : filtered.length === 0 ? (
-            <div className="p-12 text-center text-muted-foreground">No applications match your filters.</div>
+            <div className="flex flex-col items-center gap-3 p-16 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <Inbox className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">No applications match your filters.</p>
+            </div>
           ) : (
             <ul className="divide-y divide-border">
               {filtered.map((a) => (
                 <li key={a.id} className="grid grid-cols-1 gap-3 px-5 py-4 transition hover:bg-muted/30 md:grid-cols-12 md:items-center md:gap-4">
-                  <button onClick={() => setViewing(a)} className="col-span-3 text-left">
-                    <div className="font-medium">{a.full_name}</div>
-                    <div className="text-xs text-muted-foreground">{a.whatsapp_number} · {a.experience}y</div>
+                  <button onClick={() => setViewing(a)} className="col-span-3 flex items-center gap-3 text-left">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-gold text-xs font-bold text-primary-foreground">
+                      {initialsOf(a.full_name)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{a.full_name}</div>
+                      <div className="truncate text-xs text-muted-foreground">{a.whatsapp_number} · {a.experience}y</div>
+                    </div>
                   </button>
                   <div className="col-span-2 text-sm">{a.primary_skill}</div>
                   <div className="col-span-2 text-sm text-muted-foreground">{a.city}</div>
                   <div className="col-span-2"><StatusBadge status={a.status} /></div>
                   <div className="col-span-3 flex flex-wrap justify-end gap-2">
+                    {a.status === "approved" && (
+                      <Button size="sm" variant="outline" onClick={() => setApproved(a)}>
+                        <MessageCircle className="mr-1 h-3.5 w-3.5" /> Welcome msg
+                      </Button>
+                    )}
+                    {a.status === "rejected" && (
+                      <Button size="sm" variant="outline" onClick={() => setRejected(a)}>
+                        <MessageCircle className="mr-1 h-3.5 w-3.5" /> Reject msg
+                      </Button>
+                    )}
                     {a.status !== "approved" && (
                       <Button size="sm" onClick={() => updateStatus(a, "approved")} className="bg-success text-success-foreground hover:bg-success/90">
                         <Check className="mr-1 h-3.5 w-3.5" /> Approve
@@ -175,7 +206,16 @@ const AdminApplications = () => {
       <Dialog open={!!approved} onOpenChange={(o) => !o && setApproved(null)}>
         <DialogContent className="max-w-lg">
           {approved && (
-            <ApprovalTemplate app={approved} onClose={() => setApproved(null)} />
+            <MessageTemplate kind="approved" app={approved} onClose={() => setApproved(null)} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Rejection template dialog */}
+      <Dialog open={!!rejected} onOpenChange={(o) => !o && setRejected(null)}>
+        <DialogContent className="max-w-lg">
+          {rejected && (
+            <MessageTemplate kind="rejected" app={rejected} onClose={() => setRejected(null)} />
           )}
         </DialogContent>
       </Dialog>
@@ -183,19 +223,44 @@ const AdminApplications = () => {
   );
 };
 
-const ApprovalTemplate = ({ app, onClose }: { app: Application; onClose: () => void }) => {
-  const message = tpl(app.full_name);
+const MessageTemplate = ({
+  kind,
+  app,
+  onClose,
+}: {
+  kind: "approved" | "rejected";
+  app: Application;
+  onClose: () => void;
+}) => {
+  const isApproved = kind === "approved";
+  const message = isApproved ? tpl(app.full_name) : rejectTpl(app.full_name);
   const waNumber = app.whatsapp_number.replace(/[^\d]/g, "");
   const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
   const copy = async () => {
     await navigator.clipboard.writeText(message);
     toast({ title: "Copied to clipboard" });
   };
+  const Icon = isApproved ? Heart : XCircle;
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="font-display text-2xl">Approved · Send welcome</DialogTitle>
-        <DialogDescription>Copy the message below or open WhatsApp directly.</DialogDescription>
+        <div className="mb-2 flex items-center gap-2">
+          <span
+            className={`flex h-9 w-9 items-center justify-center rounded-full ${
+              isApproved ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"
+            }`}
+          >
+            <Icon className="h-4 w-4" />
+          </span>
+          <DialogTitle className="font-display text-2xl">
+            {isApproved ? "Approved · Send welcome" : "Rejected · Send a kind note"}
+          </DialogTitle>
+        </div>
+        <DialogDescription>
+          {isApproved
+            ? "Copy the message below or open WhatsApp directly."
+            : "Let the applicant know with care. Edit before sending if you'd like to personalize."}
+        </DialogDescription>
       </DialogHeader>
       <Textarea readOnly value={message} rows={12} className="font-mono text-sm" />
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -203,7 +268,13 @@ const ApprovalTemplate = ({ app, onClose }: { app: Application; onClose: () => v
           <Copy className="mr-2 h-4 w-4" /> Copy message
         </Button>
         <a href={waLink} target="_blank" rel="noreferrer" className="flex-1">
-          <Button className="w-full bg-success text-success-foreground hover:bg-success/90">
+          <Button
+            className={`w-full ${
+              isApproved
+                ? "bg-success text-success-foreground hover:bg-success/90"
+                : "bg-foreground text-background hover:bg-foreground/90"
+            }`}
+          >
             <MessageCircle className="mr-2 h-4 w-4" /> Open WhatsApp
           </Button>
         </a>
@@ -213,15 +284,42 @@ const ApprovalTemplate = ({ app, onClose }: { app: Application; onClose: () => v
   );
 };
 
-const Stat = ({ label, value, tone }: { label: string; value: number; tone: "warning" | "success" | "muted" }) => {
-  const dot = { warning: "bg-primary", success: "bg-success", muted: "bg-muted-foreground/40" }[tone];
+const TabTrigger = ({
+  value,
+  icon: Icon,
+  label,
+  count,
+  tone,
+}: {
+  value: string;
+  icon: typeof Inbox;
+  label: string;
+  count: number;
+  tone: "muted" | "warning" | "success" | "danger";
+}) => {
+  const toneClasses = {
+    muted: "data-[state=active]:bg-foreground data-[state=active]:text-background",
+    warning: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
+    success: "data-[state=active]:bg-success data-[state=active]:text-success-foreground",
+    danger: "data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground",
+  }[tone];
+  const countClasses = {
+    muted: "data-[state=active]:bg-background/20 bg-muted text-muted-foreground",
+    warning: "data-[state=active]:bg-primary-foreground/20 bg-primary/15 text-primary",
+    success: "data-[state=active]:bg-success-foreground/20 bg-success/15 text-success",
+    danger: "data-[state=active]:bg-destructive-foreground/20 bg-destructive/15 text-destructive",
+  }[tone];
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-soft md:p-5">
-      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        <span className={`h-2 w-2 rounded-full ${dot}`} /> {label}
-      </div>
-      <div className="mt-2 font-display text-3xl font-bold md:text-4xl">{value}</div>
-    </div>
+    <TabsTrigger
+      value={value}
+      className={`group relative flex h-auto items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all data-[state=inactive]:hover:bg-muted/50 ${toneClasses}`}
+    >
+      <Icon className="h-4 w-4" />
+      <span>{label}</span>
+      <span className={`ml-1 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold ${countClasses}`}>
+        {count}
+      </span>
+    </TabsTrigger>
   );
 };
 
