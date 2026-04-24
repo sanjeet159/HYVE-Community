@@ -88,33 +88,38 @@ const AdminApplications = () => {
   return (
     <AdminLayout>
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold">Applications</h1>
-          <p className="mt-1 text-muted-foreground">Review and approve incoming community requests.</p>
+        {/* Page header */}
+        <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Applications</h1>
+            <p className="mt-1 text-muted-foreground">Review and approve incoming community requests.</p>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5">
+              <Inbox className="h-3.5 w-3.5 text-primary" />
+              <span className="font-medium text-foreground">{apps.length}</span> total
+            </span>
+          </div>
         </div>
 
-        <div className="mb-6 grid grid-cols-3 gap-3 md:gap-4">
-          <Stat label="Pending" value={counts.pending} tone="warning" />
-          <Stat label="Approved" value={counts.approved} tone="success" />
-          <Stat label="Rejected" value={counts.rejected} tone="muted" />
-        </div>
+        {/* Status tabs */}
+        <Tabs value={status} onValueChange={(v) => setStatus(v as typeof status)} className="mb-6">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl border border-border bg-card p-1.5 md:grid-cols-4">
+            <TabTrigger value="all" icon={Inbox} label="All" count={apps.length} tone="muted" />
+            <TabTrigger value="pending" icon={Clock} label="Pending" count={counts.pending} tone="warning" />
+            <TabTrigger value="approved" icon={CheckCircle2} label="Approved" count={counts.approved} tone="success" />
+            <TabTrigger value="rejected" icon={XCircle} label="Rejected" count={counts.rejected} tone="danger" />
+          </TabsList>
+        </Tabs>
 
+        {/* Search & filter */}
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Search by name or WhatsApp number" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input className="h-11 pl-9" placeholder="Search by name or WhatsApp number" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
-            <SelectTrigger className="md:w-44"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All status</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-            </SelectContent>
-          </Select>
           <Select value={skill} onValueChange={setSkill}>
-            <SelectTrigger className="md:w-52"><SelectValue placeholder="Skill" /></SelectTrigger>
+            <SelectTrigger className="h-11 md:w-52"><SelectValue placeholder="Skill" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All skills</SelectItem>
               {skills.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -133,19 +138,39 @@ const AdminApplications = () => {
           {loading ? (
             <div className="p-12 text-center text-muted-foreground">Loading...</div>
           ) : filtered.length === 0 ? (
-            <div className="p-12 text-center text-muted-foreground">No applications match your filters.</div>
+            <div className="flex flex-col items-center gap-3 p-16 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <Inbox className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">No applications match your filters.</p>
+            </div>
           ) : (
             <ul className="divide-y divide-border">
               {filtered.map((a) => (
                 <li key={a.id} className="grid grid-cols-1 gap-3 px-5 py-4 transition hover:bg-muted/30 md:grid-cols-12 md:items-center md:gap-4">
-                  <button onClick={() => setViewing(a)} className="col-span-3 text-left">
-                    <div className="font-medium">{a.full_name}</div>
-                    <div className="text-xs text-muted-foreground">{a.whatsapp_number} · {a.experience}y</div>
+                  <button onClick={() => setViewing(a)} className="col-span-3 flex items-center gap-3 text-left">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-gold text-xs font-bold text-primary-foreground">
+                      {initialsOf(a.full_name)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{a.full_name}</div>
+                      <div className="truncate text-xs text-muted-foreground">{a.whatsapp_number} · {a.experience}y</div>
+                    </div>
                   </button>
                   <div className="col-span-2 text-sm">{a.primary_skill}</div>
                   <div className="col-span-2 text-sm text-muted-foreground">{a.city}</div>
                   <div className="col-span-2"><StatusBadge status={a.status} /></div>
                   <div className="col-span-3 flex flex-wrap justify-end gap-2">
+                    {a.status === "approved" && (
+                      <Button size="sm" variant="outline" onClick={() => setApproved(a)}>
+                        <MessageCircle className="mr-1 h-3.5 w-3.5" /> Welcome msg
+                      </Button>
+                    )}
+                    {a.status === "rejected" && (
+                      <Button size="sm" variant="outline" onClick={() => setRejected(a)}>
+                        <MessageCircle className="mr-1 h-3.5 w-3.5" /> Reject msg
+                      </Button>
+                    )}
                     {a.status !== "approved" && (
                       <Button size="sm" onClick={() => updateStatus(a, "approved")} className="bg-success text-success-foreground hover:bg-success/90">
                         <Check className="mr-1 h-3.5 w-3.5" /> Approve
