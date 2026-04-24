@@ -223,19 +223,44 @@ const AdminApplications = () => {
   );
 };
 
-const ApprovalTemplate = ({ app, onClose }: { app: Application; onClose: () => void }) => {
-  const message = tpl(app.full_name);
+const MessageTemplate = ({
+  kind,
+  app,
+  onClose,
+}: {
+  kind: "approved" | "rejected";
+  app: Application;
+  onClose: () => void;
+}) => {
+  const isApproved = kind === "approved";
+  const message = isApproved ? tpl(app.full_name) : rejectTpl(app.full_name);
   const waNumber = app.whatsapp_number.replace(/[^\d]/g, "");
   const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
   const copy = async () => {
     await navigator.clipboard.writeText(message);
     toast({ title: "Copied to clipboard" });
   };
+  const Icon = isApproved ? Heart : XCircle;
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="font-display text-2xl">Approved · Send welcome</DialogTitle>
-        <DialogDescription>Copy the message below or open WhatsApp directly.</DialogDescription>
+        <div className="mb-2 flex items-center gap-2">
+          <span
+            className={`flex h-9 w-9 items-center justify-center rounded-full ${
+              isApproved ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"
+            }`}
+          >
+            <Icon className="h-4 w-4" />
+          </span>
+          <DialogTitle className="font-display text-2xl">
+            {isApproved ? "Approved · Send welcome" : "Rejected · Send a kind note"}
+          </DialogTitle>
+        </div>
+        <DialogDescription>
+          {isApproved
+            ? "Copy the message below or open WhatsApp directly."
+            : "Let the applicant know with care. Edit before sending if you'd like to personalize."}
+        </DialogDescription>
       </DialogHeader>
       <Textarea readOnly value={message} rows={12} className="font-mono text-sm" />
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -243,7 +268,13 @@ const ApprovalTemplate = ({ app, onClose }: { app: Application; onClose: () => v
           <Copy className="mr-2 h-4 w-4" /> Copy message
         </Button>
         <a href={waLink} target="_blank" rel="noreferrer" className="flex-1">
-          <Button className="w-full bg-success text-success-foreground hover:bg-success/90">
+          <Button
+            className={`w-full ${
+              isApproved
+                ? "bg-success text-success-foreground hover:bg-success/90"
+                : "bg-foreground text-background hover:bg-foreground/90"
+            }`}
+          >
             <MessageCircle className="mr-2 h-4 w-4" /> Open WhatsApp
           </Button>
         </a>
@@ -253,15 +284,42 @@ const ApprovalTemplate = ({ app, onClose }: { app: Application; onClose: () => v
   );
 };
 
-const Stat = ({ label, value, tone }: { label: string; value: number; tone: "warning" | "success" | "muted" }) => {
-  const dot = { warning: "bg-primary", success: "bg-success", muted: "bg-muted-foreground/40" }[tone];
+const TabTrigger = ({
+  value,
+  icon: Icon,
+  label,
+  count,
+  tone,
+}: {
+  value: string;
+  icon: typeof Inbox;
+  label: string;
+  count: number;
+  tone: "muted" | "warning" | "success" | "danger";
+}) => {
+  const toneClasses = {
+    muted: "data-[state=active]:bg-foreground data-[state=active]:text-background",
+    warning: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
+    success: "data-[state=active]:bg-success data-[state=active]:text-success-foreground",
+    danger: "data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground",
+  }[tone];
+  const countClasses = {
+    muted: "data-[state=active]:bg-background/20 bg-muted text-muted-foreground",
+    warning: "data-[state=active]:bg-primary-foreground/20 bg-primary/15 text-primary",
+    success: "data-[state=active]:bg-success-foreground/20 bg-success/15 text-success",
+    danger: "data-[state=active]:bg-destructive-foreground/20 bg-destructive/15 text-destructive",
+  }[tone];
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-soft md:p-5">
-      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        <span className={`h-2 w-2 rounded-full ${dot}`} /> {label}
-      </div>
-      <div className="mt-2 font-display text-3xl font-bold md:text-4xl">{value}</div>
-    </div>
+    <TabsTrigger
+      value={value}
+      className={`group relative flex h-auto items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all data-[state=inactive]:hover:bg-muted/50 ${toneClasses}`}
+    >
+      <Icon className="h-4 w-4" />
+      <span>{label}</span>
+      <span className={`ml-1 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold ${countClasses}`}>
+        {count}
+      </span>
+    </TabsTrigger>
   );
 };
 
