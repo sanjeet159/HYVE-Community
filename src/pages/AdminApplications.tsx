@@ -240,6 +240,20 @@ const MessageTemplate = ({
     await navigator.clipboard.writeText(message);
     toast({ title: "Copied to clipboard" });
   };
+  const openWhatsApp = async () => {
+    const popup = window.open(waLink, "_blank", "noopener,noreferrer");
+
+    if (!popup) {
+      await navigator.clipboard.writeText(message);
+      toast({
+        title: "Popup blocked",
+        description: "The message was copied so you can paste it into WhatsApp manually.",
+      });
+      return;
+    }
+
+    toast({ title: "Opening WhatsApp" });
+  };
   const Icon = isApproved ? Heart : XCircle;
   return (
     <>
@@ -267,17 +281,17 @@ const MessageTemplate = ({
         <Button onClick={copy} variant="outline" className="flex-1">
           <Copy className="mr-2 h-4 w-4" /> Copy message
         </Button>
-        <a href={waLink} target="_blank" rel="noreferrer" className="flex-1">
-          <Button
-            className={`w-full ${
-              isApproved
-                ? "bg-success text-success-foreground hover:bg-success/90"
-                : "bg-foreground text-background hover:bg-foreground/90"
-            }`}
-          >
-            <MessageCircle className="mr-2 h-4 w-4" /> Open WhatsApp
-          </Button>
-        </a>
+        <Button
+          type="button"
+          onClick={openWhatsApp}
+          className={`flex-1 ${
+            isApproved
+              ? "bg-success text-success-foreground hover:bg-success/90"
+              : "bg-foreground text-background hover:bg-foreground/90"
+          }`}
+        >
+          <MessageCircle className="mr-2 h-4 w-4" /> Open WhatsApp
+        </Button>
       </div>
       <Button variant="ghost" onClick={onClose}>Done</Button>
     </>
