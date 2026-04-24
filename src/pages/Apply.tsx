@@ -804,29 +804,129 @@ const Header = () => (
 const SuccessScreen = () => (
   <div className="min-h-screen bg-background">
     <Header />
-    <div className="relative mx-auto flex max-w-xl flex-col items-center px-4 py-24 text-center">
-      <motion.div
-        initial={{ scale: 0, rotate: -45 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: "spring", stiffness: 200, damping: 15 }}
-        className="mb-8 flex h-28 w-28 items-center justify-center rounded-full bg-gradient-gold shadow-gold"
-      >
-        <CheckCircle2 className="h-14 w-14 text-primary-foreground" />
-      </motion.div>
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary"
-      >
-        <Sparkles className="h-3.5 w-3.5" /> Application received
-      </motion.div>
-      <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="font-display text-4xl font-bold md:text-5xl">
-        You're on the list
-      </motion.h1>
-      <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-5 leading-relaxed text-muted-foreground md:text-lg">
-        Thanks for applying to HYVE. We review every application personally — you'll hear from us on WhatsApp within a few days.
-      </motion.p>
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mt-10">
-        <Link to="/"><Button variant="outline" size="lg" className="gap-2"><ArrowLeft className="h-4 w-4" /> Back to home</Button></Link>
-      </motion.div>
+    {/* Decorative background */}
+    <div className="relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute left-1/2 top-0 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute left-1/2 top-1/3 h-[400px] w-[400px] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl" />
+      </div>
+
+      <div className="relative mx-auto flex max-w-2xl flex-col items-center px-4 py-20 text-center md:py-28">
+        {/* Animated check badge with rings */}
+        <div className="relative mb-8">
+          <motion.span
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1.6, opacity: 0 }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
+            className="absolute inset-0 rounded-full bg-primary/20"
+          />
+          <motion.span
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1.3, opacity: 0 }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut", delay: 0.4 }}
+            className="absolute inset-0 rounded-full bg-primary/25"
+          />
+          <motion.div
+            initial={{ scale: 0, rotate: -45 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 200, damping: 15 }}
+            className="relative flex h-28 w-28 items-center justify-center rounded-full bg-gradient-gold shadow-gold"
+          >
+            <CheckCircle2 className="h-14 w-14 text-primary-foreground" strokeWidth={2.5} />
+          </motion.div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary"
+        >
+          <Sparkles className="h-3.5 w-3.5" /> Application received
+        </motion.div>
+
+        <motion.h1
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="font-display text-4xl font-bold leading-tight tracking-tight md:text-6xl"
+        >
+          You're on the list
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-5 max-w-md leading-relaxed text-muted-foreground md:text-lg"
+        >
+          Thanks for applying to HYVE. We review every application personally — you'll hear from us on WhatsApp within a few days.
+        </motion.p>
+
+        {/* What happens next */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mt-12 grid w-full gap-4 sm:grid-cols-3"
+        >
+          {[
+            { icon: FileText, title: "Reviewed", desc: "Our team reads every application personally" },
+            { icon: MessageSquareHeart, title: "Shortlisted", desc: "Selected applicants get a WhatsApp ping" },
+            { icon: Sparkles, title: "Welcomed", desc: "You're invited into the Hyve community" },
+          ].map((step, i) => (
+            <motion.div
+              key={step.title}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 + i * 0.08 }}
+              className="group relative rounded-2xl border border-border bg-card p-5 text-left shadow-soft transition-all hover:border-primary/40 hover:shadow-gold"
+            >
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                <step.icon className="h-5 w-5" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Step {i + 1}
+                </span>
+              </div>
+              <h3 className="mt-1 font-display text-base font-bold text-foreground">{step.title}</h3>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{step.desc}</p>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.75 }}
+          className="mt-12 flex flex-col items-center gap-3 sm:flex-row"
+        >
+          <a href="https://hyvefreelance.com" target="_blank" rel="noreferrer">
+            <Button size="lg" className="gap-2 bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90">
+              <ArrowLeft className="h-4 w-4" /> Back to Hyve
+            </Button>
+          </a>
+          <a href="https://blog.hyvefreelance.com" target="_blank" rel="noreferrer">
+            <Button variant="outline" size="lg" className="gap-2">
+              Read the blog <ArrowRight className="h-4 w-4" />
+            </Button>
+          </a>
+        </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9 }}
+          className="mt-10 text-xs text-muted-foreground"
+        >
+          Questions? Reach us at{" "}
+          <a href="mailto:hello@hyvefreelance.com" className="font-semibold text-primary hover:underline">
+            hello@hyvefreelance.com
+          </a>
+        </motion.p>
+      </div>
     </div>
   </div>
 );
