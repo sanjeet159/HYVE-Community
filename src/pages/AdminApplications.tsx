@@ -43,6 +43,7 @@ const AdminApplications = () => {
   const [status, setStatus] = useState<"all" | Status>("all");
   const [skill, setSkill] = useState<string>("all");
   const [approved, setApproved] = useState<Application | null>(null);
+  const [rejected, setRejected] = useState<Application | null>(null);
   const [viewing, setViewing] = useState<Application | null>(null);
 
   const load = async () => {
@@ -64,6 +65,7 @@ const AdminApplications = () => {
     }
     setApps((prev) => prev.map((a) => a.id === app.id ? { ...a, status: s } : a));
     if (s === "approved") setApproved({ ...app, status: s });
+    else if (s === "rejected") setRejected({ ...app, status: s });
     else toast({ title: `Application ${s}` });
   };
 
