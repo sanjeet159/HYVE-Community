@@ -52,7 +52,7 @@ const skillMeta: Record<typeof skills[number], { icon: typeof Palette; tag: stri
   "UI/UX": { icon: Palette, tag: "Design beautiful experiences", color: "from-violet-500/20 to-purple-500/10 border-violet-500/30 hover:border-violet-500/60" },
   "Development": { icon: Code2, tag: "Build the web", color: "from-blue-500/20 to-cyan-500/10 border-blue-500/30 hover:border-blue-500/60" },
   "Content Writing": { icon: PenLine, tag: "Words that convert", color: "from-emerald-500/20 to-green-500/10 border-emerald-500/30 hover:border-emerald-500/60" },
-  "Digital Marketing": { icon: Megaphone, tag: "Grow brands online", color: "from-orange-500/20 to-amber-500/10 border-orange-500/30 hover:border-orange-500/60" },
+  "Digital Marketing": { icon: Megaphone, tag: "Grow brands online", color: "from-orange-500/20 to-amber-500/10 border-orange-500/30 hover:border-amber-500/60" },
   "Other": { icon: Layers, tag: "Something unique", color: "from-rose-500/20 to-pink-500/10 border-rose-500/30 hover:border-rose-500/60" },
 };
 
@@ -74,8 +74,8 @@ const baseSchema = z.object({
   other_specialization: z.string().trim().max(100).optional().or(z.literal("")),
   experience: z.enum(experiences),
   city: z.string().trim().min(2).max(100),
-  portfolio_url: z.string().trim().url("Invalid URL").max(300).optional().or(z.literal("")),
-  linkedin_url: z.string().trim().url("Invalid URL").max(300).optional().or(z.literal("")),
+  portfolio_url: z.string().trim().min(1, "Portfolio URL is required").url("Invalid URL – make sure it starts with https://").max(300),
+  linkedin_url: z.string().trim().min(1, "LinkedIn URL is required").url("Invalid URL – make sure it starts with https://").max(300),
   why_join: z.string().trim().min(10, "Tell us a bit more (min 10 chars)").max(2000),
 });
 
@@ -202,8 +202,8 @@ const Apply = () => {
         experience: d.experience as typeof experiences[number],
         city: d.city as string,
         why_join: d.why_join as string,
-        portfolio_url: d.portfolio_url ? d.portfolio_url : null,
-        linkedin_url: d.linkedin_url ? d.linkedin_url : null,
+        portfolio_url: d.portfolio_url,
+        linkedin_url: d.linkedin_url,
         resume_url: resumePath,
       };
       const { error } = await supabase.from("applications").insert([payload]);
@@ -630,11 +630,11 @@ const StepWork = ({ form, set, errors, resume, resumeError, onResume }: WorkStep
   const inputRef = useRef<HTMLInputElement>(null);
   return (
     <div className="space-y-6">
-      <StepHeader eyebrow="03 — Your work" title="Show us what you've built" desc="Optional, but a portfolio helps us get to know you faster." />
-      <Field label="Portfolio URL" optional error={errors.portfolio_url} icon={Link2}>
+      <StepHeader eyebrow="03 — Your work" title="Show us what you've built" desc="Share your portfolio and LinkedIn — we'd love to see your work." />
+      <Field label="Portfolio URL" error={errors.portfolio_url} icon={Link2}>
         <Input value={form.portfolio_url} onChange={(e) => set("portfolio_url", e.target.value)} placeholder="https://yourwork.com" maxLength={300} className="h-12 pl-10" />
       </Field>
-      <Field label="LinkedIn URL" optional error={errors.linkedin_url} icon={Linkedin}>
+      <Field label="LinkedIn URL" error={errors.linkedin_url} icon={Linkedin}>
         <Input value={form.linkedin_url} onChange={(e) => set("linkedin_url", e.target.value)} placeholder="https://linkedin.com/in/you" maxLength={300} className="h-12 pl-10" />
       </Field>
       <div className="space-y-2">
