@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useCallback } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
@@ -37,11 +37,12 @@ import {
   FileText,
   Upload,
   X,
+  Wand2,
+  RefreshCw,
   Users,
   Globe,
   Clock,
   Zap,
-  AlertCircle,
 } from "lucide-react";
 
 const skills = ["UI/UX", "Development", "Content Writing", "Digital Marketing", "Other"] as const;
@@ -51,7 +52,7 @@ const skillMeta: Record<typeof skills[number], { icon: typeof Palette; tag: stri
   "UI/UX": { icon: Palette, tag: "Design beautiful experiences", color: "from-violet-500/20 to-purple-500/10 border-violet-500/30 hover:border-violet-500/60" },
   "Development": { icon: Code2, tag: "Build the web", color: "from-blue-500/20 to-cyan-500/10 border-blue-500/30 hover:border-blue-500/60" },
   "Content Writing": { icon: PenLine, tag: "Words that convert", color: "from-emerald-500/20 to-green-500/10 border-emerald-500/30 hover:border-emerald-500/60" },
-  "Digital Marketing": { icon: Megaphone, tag: "Grow brands online", color: "from-orange-500/20 to-amber-500/10 border-orange-500/30 hover:border-orange-500/60" },
+  "Digital Marketing": { icon: Megaphone, tag: "Grow brands online", color: "from-orange-500/20 to-amber-500/10 border-orange-500/30 hover:border-amber-500/60" },
   "Other": { icon: Layers, tag: "Something unique", color: "from-rose-500/20 to-pink-500/10 border-rose-500/30 hover:border-rose-500/60" },
 };
 
@@ -73,8 +74,8 @@ const baseSchema = z.object({
   other_specialization: z.string().trim().max(100).optional().or(z.literal("")),
   experience: z.enum(experiences),
   city: z.string().trim().min(2).max(100),
-  portfolio_url: z.string().trim().url("Invalid URL").max(300).optional().or(z.literal("")),
-  linkedin_url: z.string().trim().url("Invalid URL").max(300).optional().or(z.literal("")),
+  portfolio_url: z.string().trim().min(1, "Portfolio URL is required").url("Invalid URL – make sure it starts with https://").max(300),
+  linkedin_url: z.string().trim().min(1, "LinkedIn URL is required").url("Invalid URL – make sure it starts with https://").max(300),
   why_join: z.string().trim().min(10, "Tell us a bit more (min 10 chars)").max(2000),
 });
 
@@ -130,32 +131,10 @@ const Apply = () => {
   const [resumeError, setResumeError] = useState<string>("");
   const [otherDialogOpen, setOtherDialogOpen] = useState(false);
   const [otherDraft, setOtherDraft] = useState("");
-  const [checkingNumber, setCheckingNumber] = useState(false);
-  const [duplicateBlock, setDuplicateBlock] = useState(false);
-  const numberCheckRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => {
     setForm((f) => ({ ...f, [k]: v }));
     setErrors((e) => ({ ...e, [k]: "" }));
-    if (k === "whatsapp_number") {
-      setDuplicateBlock(false);
-      const fullNumber = "+91 " + String(v).replace(/\D/g, "");
-      if (String(v).replace(/\D/g, "").length >= 10) {
-        if (numberCheckRef.current) clearTimeout(numberCheckRef.current);
-        numberCheckRef.current = setTimeout(async () => {
-          setCheckingNumber(true);
-          try {
-            const { data } = await supabase
-              .from("applications")
-              .select("id")
-              .eq("whatsapp_number", fullNumber)
-              .limit(1);
-            if (data && data.length > 0) setDuplicateBlock(true);
-          } catch (_) {}
-          finally { setCheckingNumber(false); }
-        }, 600);
-      }
-    }
   };
 
   const handleResume = (file: File | null) => {
@@ -189,7 +168,7 @@ const Apply = () => {
     return true;
   };
 
-  const next = () => { if (duplicateBlock) return; if (!validateStep(step)) return; setStep((s) => Math.min(s + 1, steps.length - 1)); };
+  const next = () => { if (!validateStep(step)) return; setStep((s) => Math.min(s + 1, steps.length - 1)); };
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
   const uploadResume = async (): Promise<string | null> => {
@@ -223,8 +202,8 @@ const Apply = () => {
         experience: d.experience as typeof experiences[number],
         city: d.city as string,
         why_join: d.why_join as string,
-        portfolio_url: d.portfolio_url ? d.portfolio_url : null,
-        linkedin_url: d.linkedin_url ? d.linkedin_url : null,
+        portfolio_url: d.portfolio_url,
+        linkedin_url: d.linkedin_url,
         resume_url: resumePath,
       };
       const { error } = await supabase.from("applications").insert([payload]);
@@ -294,9 +273,9 @@ const Apply = () => {
             transition={{ duration: 0.7, delay: 0.1 }}
             className="font-display text-5xl font-bold leading-[1.03] text-background md:text-7xl lg:text-8xl"
           >
-            Find your people{" "}
+            Stop working alone.{" "}
             <br className="hidden sm:block" />
-            in the{" "}
+            Find your team in the{" "}
             <span className="bg-gradient-gold bg-clip-text text-transparent">HYVE</span>
             <span className="text-primary">.</span>
           </motion.h1>
@@ -308,8 +287,8 @@ const Apply = () => {
             transition={{ duration: 0.7, delay: 0.2 }}
             className="mt-6 max-w-lg text-lg font-light leading-relaxed text-background/60 md:text-xl"
           >
-            A WhatsApp community of freelance designers, developers, writers, and marketers
-            shipping real work for real clients.
+            No spam. No automated rejections. No corporate nonsense.
+            Just an honest response from the HYVE team within 48 hours.
           </motion.p>
 
           {/* Stats */}
@@ -319,7 +298,7 @@ const Apply = () => {
             transition={{ duration: 0.7, delay: 0.3 }}
             className="mt-10 flex flex-wrap items-center gap-3"
           >
-            <StatPill icon={Users} value="136+" label="Active members" />
+            <StatPill icon={Users} value="187+" label="Active members" />
             <StatPill icon={Globe} value="7+" label="Cities" />
             <StatPill icon={Clock} value="2 min" label="To apply" />
           </motion.div>
@@ -430,7 +409,7 @@ const Apply = () => {
                   transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
                   className="space-y-6"
                 >
-                  {step === 0 && <StepAbout form={form} set={set} errors={errors} duplicateBlock={duplicateBlock} checkingNumber={checkingNumber} />}
+                  {step === 0 && <StepAbout form={form} set={set} errors={errors} />}
                   {step === 1 && <StepCraft form={form} set={set} errors={errors} onPickOther={openOtherDialog} />}
                   {step === 2 && <StepWork form={form} set={set} errors={errors} resume={resume} resumeError={resumeError} onResume={handleResume} />}
                   {step === 3 && <StepStory form={form} set={set} errors={errors} />}
@@ -527,13 +506,11 @@ type StepProps = {
   form: FormState;
   set: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
   errors: Record<string, string>;
-  duplicateBlock?: boolean;
-  checkingNumber?: boolean;
 };
 type CraftStepProps = StepProps & { onPickOther: () => void };
 type WorkStepProps = StepProps & { resume: File | null; resumeError: string; onResume: (f: File | null) => void };
 
-const StepAbout = ({ form, set, errors, duplicateBlock = false, checkingNumber = false }: StepProps) => (
+const StepAbout = ({ form, set, errors }: StepProps) => (
   <div className="space-y-5">
     <StepHeader eyebrow="01 — About you" title="Let's start with the basics" desc="Tell us who you are and where to reach you." />
     <Field label="Full name" error={errors.full_name} icon={User}>
@@ -548,27 +525,9 @@ const StepAbout = ({ form, set, errors, duplicateBlock = false, checkingNumber =
           placeholder="98765 43210"
           maxLength={15}
           inputMode="numeric"
-          className={`h-12 pl-14 transition-all focus:ring-2 focus:ring-primary/20 ${duplicateBlock ? "border-destructive focus:ring-destructive/20" : ""}`}
+          className="h-12 pl-14 transition-all focus:ring-2 focus:ring-primary/20"
         />
-        {checkingNumber && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </div>
-        )}
       </div>
-      {duplicateBlock && (
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-2 flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/8 px-4 py-3"
-        >
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-          <div>
-            <p className="text-sm font-semibold text-destructive">Application already exists</p>
-            <p className="text-xs text-destructive/80 mt-0.5">You cannot apply again while your application is pending. We'll reach out on WhatsApp within a few days.</p>
-          </div>
-        </motion.div>
-      )}
     </Field>
     <Field label="City" error={errors.city}>
       <div className="relative">
@@ -671,11 +630,11 @@ const StepWork = ({ form, set, errors, resume, resumeError, onResume }: WorkStep
   const inputRef = useRef<HTMLInputElement>(null);
   return (
     <div className="space-y-6">
-      <StepHeader eyebrow="03 — Your work" title="Show us what you've built" desc="Optional, but a portfolio helps us get to know you faster." />
-      <Field label="Portfolio URL" optional error={errors.portfolio_url} icon={Link2}>
+      <StepHeader eyebrow="03 — Your work" title="Show us what you've built" desc="Share your portfolio and LinkedIn — we'd love to see your work." />
+      <Field label="Portfolio URL" error={errors.portfolio_url} icon={Link2}>
         <Input value={form.portfolio_url} onChange={(e) => set("portfolio_url", e.target.value)} placeholder="https://yourwork.com" maxLength={300} className="h-12 pl-10" />
       </Field>
-      <Field label="LinkedIn URL" optional error={errors.linkedin_url} icon={Linkedin}>
+      <Field label="LinkedIn URL" error={errors.linkedin_url} icon={Linkedin}>
         <Input value={form.linkedin_url} onChange={(e) => set("linkedin_url", e.target.value)} placeholder="https://linkedin.com/in/you" maxLength={300} className="h-12 pl-10" />
       </Field>
       <div className="space-y-2">
@@ -721,23 +680,56 @@ const StepWork = ({ form, set, errors, resume, resumeError, onResume }: WorkStep
 };
 
 const StepStory = ({ form, set, errors }: StepProps) => {
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loadingAi, setLoadingAi] = useState(false);
+  const [aiError, setAiError] = useState<string>("");
+
+  const fetchSuggestions = async () => {
+    setLoadingAi(true); setAiError("");
+    try {
+      const { data, error } = await supabase.functions.invoke("suggest-why-join", {
+        body: { full_name: form.full_name, primary_skill: form.primary_skill, other_specialization: form.other_specialization, experience: form.experience, city: form.city, current_text: form.why_join },
+      });
+      if (error) throw error;
+      const list = (data as { suggestions?: string[] } | null)?.suggestions ?? [];
+      if (!list.length) { setAiError("No suggestions came back — try again."); } else { setSuggestions(list); }
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "Couldn't reach the AI");
+    } finally { setLoadingAi(false); }
+  };
+
   return (
     <div className="space-y-6">
       <StepHeader eyebrow="04 — Your story" title="Why HYVE?" desc="The most important question. Be honest, be you." />
-      <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background p-5">
-        <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-gold text-primary-foreground shadow-gold text-lg">
-            💡
-          </span>
-          <div>
-            <p className="text-sm font-semibold">Tips for a great answer</p>
-            <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-              <li>✦ What kind of work are you currently doing?</li>
-              <li>✦ What do you hope to find in this community?</li>
-              <li>✦ What would you bring to HYVE?</li>
-            </ul>
+      <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/8 via-background to-background p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-gold text-primary-foreground shadow-gold">
+              <Wand2 className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">Stuck? Let AI spark some ideas</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Personalised to your craft — pick one and make it yours.</p>
+            </div>
           </div>
+          <Button type="button" size="sm" variant="outline" onClick={fetchSuggestions} disabled={loadingAi} className="shrink-0 border-primary/40 text-primary hover:bg-primary/10">
+            {loadingAi ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Thinking</> : suggestions.length ? <><RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Regenerate</> : <><Sparkles className="mr-1.5 h-3.5 w-3.5" /> Suggest</>}
+          </Button>
         </div>
+        {aiError && <p className="mt-3 text-xs text-destructive">{aiError}</p>}
+        <AnimatePresence>
+          {suggestions.length > 0 && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }} className="mt-4 space-y-2 overflow-hidden">
+              {suggestions.map((s, i) => (
+                <motion.button key={i} type="button" onClick={() => { set("why_join", s); setSuggestions([]); }} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }} className="group flex w-full items-start gap-3 rounded-xl border border-border bg-card p-3 text-left transition-all hover:border-primary/50 hover:bg-primary/5">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">{i + 1}</span>
+                  <span className="flex-1 text-sm leading-relaxed">{s}</span>
+                  <span className="mt-0.5 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground opacity-0 transition group-hover:opacity-100">Use →</span>
+                </motion.button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
       <div className="space-y-1.5">
         <Label className="text-sm font-semibold">Why do you want to join?</Label>
@@ -802,139 +794,139 @@ const StatPill = ({ icon: Icon, value, label }: { icon: typeof Users; value: str
 const Header = () => (
   <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50">
     <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
-      <a href="https://hyvefreelance.com" target="_blank" rel="noopener noreferrer">
+      <Link to="/">
         <img src="/logo.png" alt="Hyve" className="h-8 w-auto" />
-      </a>
+      </Link>
     </div>
   </header>
 );
 
 const SuccessScreen = () => (
-  <div className="min-h-screen bg-background overflow-hidden">
+  <div className="min-h-screen bg-background">
     <Header />
+    {/* Decorative background */}
+    <div className="relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute left-1/2 top-0 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute left-1/2 top-1/3 h-[400px] w-[400px] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl" />
+      </div>
 
-    {/* Background decoration */}
-    <div className="pointer-events-none fixed inset-0 overflow-hidden">
-      <div className="absolute -right-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-primary/8 blur-[80px]" />
-      <div className="absolute -left-24 bottom-0 h-80 w-80 rounded-full bg-primary/5 blur-[60px]" />
-    </div>
-
-    <div className="relative mx-auto flex max-w-2xl flex-col items-center px-4 py-20 text-center">
-
-      {/* Animated checkmark */}
-      <motion.div
-        initial={{ scale: 0, rotate: -45 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.1 }}
-        className="relative mb-8"
-      >
-        <div className="flex h-32 w-32 items-center justify-center rounded-full bg-gradient-gold shadow-gold">
-          <CheckCircle2 className="h-16 w-16 text-primary-foreground" />
-        </div>
-        {/* Ripple rings */}
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0.6 }}
-          animate={{ scale: 1.6, opacity: 0 }}
-          transition={{ duration: 1.2, delay: 0.5, repeat: Infinity, repeatDelay: 1 }}
-          className="absolute inset-0 rounded-full bg-primary/20"
-        />
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0.4 }}
-          animate={{ scale: 2, opacity: 0 }}
-          transition={{ duration: 1.4, delay: 0.7, repeat: Infinity, repeatDelay: 1 }}
-          className="absolute inset-0 rounded-full bg-primary/10"
-        />
-      </motion.div>
-
-      {/* Badge */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.35 }}
-        className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary"
-      >
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-        </span>
-        Application received
-      </motion.div>
-
-      {/* Heading */}
-      <motion.h1
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="font-display text-5xl font-bold leading-tight md:text-6xl"
-      >
-        You're on the{" "}
-        <span className="bg-gradient-gold bg-clip-text text-transparent">list</span>
-        <span className="text-primary">.</span>
-      </motion.h1>
-
-      {/* Description */}
-      <motion.p
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.48 }}
-        className="mt-5 max-w-md text-lg font-light leading-relaxed text-muted-foreground"
-      >
-        Thanks for applying to HYVE. We review every application personally — you'll hear from us on WhatsApp within a few days.
-      </motion.p>
-
-      {/* Info cards */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.55 }}
-        className="mt-10 grid w-full grid-cols-1 gap-3 sm:grid-cols-3"
-      >
-        {[
-          { emoji: "👀", title: "Personal review", desc: "Every application is read by a human" },
-          { emoji: "📲", title: "WhatsApp reply", desc: "We'll ping you within a few days" },
-          { emoji: "🐝", title: "Join the HYVE", desc: "Connect with India's top freelancers" },
-        ].map((item, i) => (
+      <div className="relative mx-auto flex max-w-2xl flex-col items-center px-4 py-20 text-center md:py-28">
+        {/* Animated check badge with rings */}
+        <div className="relative mb-8">
+          <motion.span
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1.6, opacity: 0 }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
+            className="absolute inset-0 rounded-full bg-primary/20"
+          />
+          <motion.span
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1.3, opacity: 0 }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut", delay: 0.4 }}
+            className="absolute inset-0 rounded-full bg-primary/25"
+          />
           <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 + i * 0.08 }}
-            className="rounded-2xl border border-border bg-card p-4 text-left"
+            initial={{ scale: 0, rotate: -45 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 200, damping: 15 }}
+            className="relative flex h-28 w-28 items-center justify-center rounded-full bg-gradient-gold shadow-gold"
           >
-            <div className="mb-2 text-2xl">{item.emoji}</div>
-            <div className="text-sm font-semibold text-foreground">{item.title}</div>
-            <div className="mt-0.5 text-xs text-muted-foreground">{item.desc}</div>
+            <CheckCircle2 className="h-14 w-14 text-primary-foreground" strokeWidth={2.5} />
           </motion.div>
-        ))}
-      </motion.div>
+        </div>
 
-      {/* CTA */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.75 }}
-        className="mt-10 flex flex-col items-center gap-3 sm:flex-row"
-      >
-        <a href="https://hyvefreelance.com" target="_blank" rel="noopener noreferrer">
-          <Button size="lg" className="gap-2 bg-foreground px-8 text-background hover:bg-foreground/90">
-            Visit hyvefreelance.com <ArrowRight className="h-4 w-4" />
-          </Button>
-        </a>
-        <a href="/">
-          <Button variant="outline" size="lg" className="gap-2 px-8">
-            <ArrowLeft className="h-4 w-4" /> Back to home
-          </Button>
-        </a>
-      </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary"
+        >
+          <Sparkles className="h-3.5 w-3.5" /> Application received
+        </motion.div>
 
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.9 }}
-        className="mt-8 text-xs text-muted-foreground"
-      >
-        ✦ Questions? Reach us on WhatsApp or Instagram @hyvefreelance
-      </motion.p>
+        <motion.h1
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="font-display text-4xl font-bold leading-tight tracking-tight md:text-6xl"
+        >
+          You're on the list
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-5 max-w-md leading-relaxed text-muted-foreground md:text-lg"
+        >
+          Thanks for applying to HYVE. We review every application personally — you'll hear from us on WhatsApp within a few days.
+        </motion.p>
+
+        {/* What happens next */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mt-12 grid w-full gap-4 sm:grid-cols-3"
+        >
+          {[
+            { icon: FileText, title: "Reviewed", desc: "Our team reads every application personally" },
+            { icon: MessageSquareHeart, title: "Shortlisted", desc: "Selected applicants get a WhatsApp ping" },
+            { icon: Sparkles, title: "Welcomed", desc: "You're invited into the Hyve community" },
+          ].map((step, i) => (
+            <motion.div
+              key={step.title}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 + i * 0.08 }}
+              className="group relative rounded-2xl border border-border bg-card p-5 text-left shadow-soft transition-all hover:border-primary/40 hover:shadow-gold"
+            >
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                <step.icon className="h-5 w-5" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Step {i + 1}
+                </span>
+              </div>
+              <h3 className="mt-1 font-display text-base font-bold text-foreground">{step.title}</h3>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{step.desc}</p>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.75 }}
+          className="mt-12 flex flex-col items-center gap-3 sm:flex-row"
+        >
+          <a href="https://hyvefreelance.com">
+            <Button size="lg" className="gap-2 bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90">
+              <ArrowLeft className="h-4 w-4" /> Back to home
+            </Button>
+          </a>
+          <a href="https://blog.hyvefreelance.com" target="_blank" rel="noreferrer">
+            <Button variant="outline" size="lg" className="gap-2">
+              Read the blog <ArrowRight className="h-4 w-4" />
+            </Button>
+          </a>
+        </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9 }}
+          className="mt-10 text-xs text-muted-foreground"
+        >
+          Questions? Reach us at{" "}
+          <a href="mailto:team@hyvefreelance.com" className="font-semibold text-primary hover:underline">
+            team@hyvefreelance.com
+          </a>
+        </motion.p>
+      </div>
     </div>
   </div>
 );
