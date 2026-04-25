@@ -1,12 +1,13 @@
 import { ReactNode, useEffect, useState } from "react";
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, BarChart3, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3, LogOut, Menu, X, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { to: "/admin", label: "Applications", icon: LayoutDashboard, end: true },
   { to: "/admin/members", label: "Members", icon: Users },
+  { to: "/admin/discover", label: "Discover", icon: Compass },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
