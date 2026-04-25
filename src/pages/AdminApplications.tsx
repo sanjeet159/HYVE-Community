@@ -32,7 +32,7 @@ interface Application {
 const skills = ["UI/UX", "Development", "Content Writing", "Digital Marketing", "Other"];
 
 const tpl = (name: string) =>
-  `Hey ${name}! 🐝\n\nYou're officially in the HYVE — welcome to the group!\n\nWe're a curated community of freelance designers, developers, writers & marketers shipping real work for real clients.\n\nExcited to have you here. Let's build something great together! 🟡\n\n— The HYVE Team\nhyvefreelance.com`;
+  `Hey ${name}!\n\nYou're officially in the HYVE — welcome to the group!\n\nWe're a curated community of freelance designers, developers, writers & marketers shipping real work for real clients.\n\nJoin our community group here:\nhttps://chat.whatsapp.com/BQFm77OF85BD9MJsBTXMP6\n\nExcited to have you here. Let's build something great together!\n\n— The HYVE Team\nhyvefreelance.com`;
 
 const rejectTpl = (name: string) =>
   `Hey ${name},\n\nThank you so much for applying to Hyve and taking the time to share your story with us. 💛\n\nAfter careful review, we're unable to offer you a spot in the community at this moment. Hyve is a curated space, and we keep the group tightly aligned with where the community is right now — this isn't a reflection of your talent or potential.\n\nA few notes from our side:\n• Keep building your portfolio and putting your work out there\n• You're welcome to re-apply in the future as you grow\n• Follow us on hyvefreelance.com for resources and updates\n\nWishing you the very best on your journey.\n— The Hyve team`;
