@@ -922,8 +922,8 @@ const SuccessScreen = () => (
           className="mt-10 text-xs text-muted-foreground"
         >
           Questions? Reach us at{" "}
-          <a href="mailto:hello@hyvefreelance.com" className="font-semibold text-primary hover:underline">
-            hello@hyvefreelance.com
+          <a href="mailto:team@hyvefreelance.com" className="font-semibold text-primary hover:underline">
+            team@hyvefreelance.com
           </a>
         </motion.p>
       </div>
