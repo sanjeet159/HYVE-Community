@@ -65,6 +65,45 @@ export type Database = {
         }
         Relationships: []
       }
+      discovered_communities: {
+        Row: {
+          city: string | null
+          created_at: string
+          discovered_at: string
+          id: string
+          join_link: string | null
+          member_count: number | null
+          name: string
+          platform: string
+          skills: string[]
+          summary: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          discovered_at?: string
+          id?: string
+          join_link?: string | null
+          member_count?: number | null
+          name: string
+          platform: string
+          skills?: string[]
+          summary?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          discovered_at?: string
+          id?: string
+          join_link?: string | null
+          member_count?: number | null
+          name?: string
+          platform?: string
+          skills?: string[]
+          summary?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

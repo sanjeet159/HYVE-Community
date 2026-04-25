@@ -9,6 +9,7 @@ import AdminLogin from "./pages/AdminLogin.tsx";
 import AdminApplications from "./pages/AdminApplications.tsx";
 import AdminMembers from "./pages/AdminMembers.tsx";
 import AdminAnalytics from "./pages/AdminAnalytics.tsx";
+import AdminDiscover from "./pages/AdminDiscover.tsx";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/admin" element={<AdminApplications />} />
           <Route path="/admin/members" element={<AdminMembers />} />
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
+          <Route path="/admin/discover" element={<AdminDiscover />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
