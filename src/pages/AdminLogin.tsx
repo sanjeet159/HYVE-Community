@@ -4,11 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { Lock } from "lucide-react";
-
-// Simple hardcoded admin credentials - no database needed
-const ADMIN_EMAIL = "team@hyvefreelance.com";
-const ADMIN_PASSWORD = "HyveAdmin@2024";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -20,16 +17,30 @@ const AdminLogin = () => {
     e.preventDefault();
     setLoading(true);
 
-    await new Promise((r) => setTimeout(r, 600)); // small delay for UX
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      // Store session in localStorage
-      localStorage.setItem("hyve_admin", "true");
-      navigate("/admin", { replace: true });
-    } else {
+    if (error || !data.user) {
       toast({
         title: "Not authorized",
-        description: "Incorrect email or password.",
+        description: error?.message ?? "Please use an admin account.",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
+    const { data: isAdmin, error: roleError } = await supabase.rpc("has_role", {
+      _user_id: data.user.id,
+      _role: "admin",
+    });
+
+    if (isAdmin && !roleError) {
+      navigate("/admin", { replace: true });
+    } else {
+      await supabase.auth.signOut();
+      toast({
+        title: "Not authorized",
+        description: "This account does not have admin access.",
         variant: "destructive",
       });
     }
@@ -59,7 +70,7 @@ const AdminLogin = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="team@hyvefreelance.com"
+                placeholder="admin@example.com"
                 className="h-11"
               />
             </div>

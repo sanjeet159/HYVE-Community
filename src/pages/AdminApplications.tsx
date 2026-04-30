@@ -54,11 +54,6 @@ const AdminApplications = () => {
   const [rejected, setRejected] = useState<Application | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const isAdmin = localStorage.getItem("hyve_admin");
-    if (!isAdmin) navigate("/admin/login", { replace: true });
-  }, [navigate]);
-
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -119,7 +114,7 @@ const AdminApplications = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => { localStorage.removeItem("hyve_admin"); navigate("/admin/login"); }}
+            onClick={async () => { await supabase.auth.signOut(); navigate("/admin/login"); }}
             className="text-xs text-muted-foreground"
           >
             Logout
