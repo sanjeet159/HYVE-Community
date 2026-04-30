@@ -75,8 +75,8 @@ const baseSchema = z.object({
   other_specialization: z.string().trim().max(100).optional().or(z.literal("")),
   experience: z.enum(experiences),
   city: z.string().trim().min(2).max(100),
-  portfolio_url: z.string().trim().url("Invalid URL").max(300).optional().or(z.literal("")),
-  linkedin_url: z.string().trim().url("Invalid URL").max(300).optional().or(z.literal("")),
+  portfolio_url: z.string().trim().min(1, "Portfolio URL is required").url("Invalid URL").max(300),
+  linkedin_url: z.string().trim().min(1, "LinkedIn URL is required").url("Invalid URL").max(300),
   why_join: z.string().trim().min(10, "Tell us a bit more (min 10 chars)").max(2000),
 });
 
@@ -673,11 +673,11 @@ const StepWork = ({ form, set, errors, resume, resumeError, onResume }: WorkStep
   const inputRef = useRef<HTMLInputElement>(null);
   return (
     <div className="space-y-6">
-      <StepHeader eyebrow="03 — Your work" title="Show us what you've built" desc="Optional, but a portfolio helps us get to know you faster." />
-      <Field label="Portfolio URL" optional error={errors.portfolio_url} icon={Link2}>
+      <StepHeader eyebrow="03 — Your work" title="Show us what you've built" desc="Share your portfolio and LinkedIn so we can get to know you faster." />
+      <Field label="Portfolio URL" error={errors.portfolio_url} icon={Link2}>
         <Input value={form.portfolio_url} onChange={(e) => set("portfolio_url", e.target.value)} placeholder="https://yourwork.com" maxLength={300} className="h-12 pl-10" />
       </Field>
-      <Field label="LinkedIn URL" optional error={errors.linkedin_url} icon={Linkedin}>
+      <Field label="LinkedIn URL" error={errors.linkedin_url} icon={Linkedin}>
         <Input value={form.linkedin_url} onChange={(e) => set("linkedin_url", e.target.value)} placeholder="https://linkedin.com/in/you" maxLength={300} className="h-12 pl-10" />
       </Field>
       <div className="space-y-2">
