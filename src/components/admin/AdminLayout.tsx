@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, Users, BarChart3, LogOut, Menu, X, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 const nav = [
   { to: "/admin", label: "Applications", icon: LayoutDashboard, end: true },
@@ -18,18 +19,37 @@ export const AdminLayout = ({ children }: { children: ReactNode }) => {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const isAdmin = localStorage.getItem("hyve_admin");
-    if (!isAdmin) {
-      navigate("/admin/login", { replace: true });
-    } else {
-      setChecking(false);
-    }
+    let active = true;
+
+    const verifyAdmin = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        navigate("/admin/login", { replace: true });
+        return;
+      }
+
+      const { data: isAdmin } = await supabase.rpc("has_role", {
+        _user_id: session.user.id,
+        _role: "admin",
+      });
+
+      if (!isAdmin) {
+        await supabase.auth.signOut();
+        navigate("/admin/login", { replace: true });
+        return;
+      }
+
+      if (active) setChecking(false);
+    };
+
+    verifyAdmin();
+    return () => { active = false; };
   }, [navigate]);
 
   useEffect(() => { setOpen(false); }, [location.pathname]);
 
-  const logout = () => {
-    localStorage.removeItem("hyve_admin");
+  const logout = async () => {
+    await supabase.auth.signOut();
     navigate("/admin/login");
   };
 
