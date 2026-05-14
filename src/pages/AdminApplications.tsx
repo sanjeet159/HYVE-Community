@@ -251,7 +251,12 @@ const AdminApplications = () => {
           {rejected && <MessageTemplate kind="rejected" app={rejected} onClose={() => setRejected(null)} />}
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="max-w-lg">
+          <InviteTemplate onClose={() => setInviteOpen(false)} />
+        </DialogContent>
+      </Dialog>
   );
 };
 
