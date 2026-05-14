@@ -55,6 +55,7 @@ const AdminApplications = () => {
   const [skill, setSkill] = useState<string>("all");
   const [approved, setApproved] = useState<Application | null>(null);
   const [rejected, setRejected] = useState<Application | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const load = async () => {
