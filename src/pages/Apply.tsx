@@ -321,7 +321,7 @@ const Apply = () => {
             transition={{ duration: 0.7, delay: 0.3 }}
             className="mt-10 flex flex-wrap items-center gap-3"
           >
-            <StatPill icon={Users} value="136+" label="Active members" />
+            <StatPill icon={Users} value="480+" label="Active members" />
             <StatPill icon={Globe} value="7+" label="Cities" />
             <StatPill icon={Clock} value="2 min" label="To apply" />
           </motion.div>
