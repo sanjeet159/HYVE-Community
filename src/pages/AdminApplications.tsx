@@ -115,14 +115,23 @@ const AdminApplications = () => {
               <span className="font-medium text-primary">{counts.pending}</span> pending review
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={async () => { await supabase.auth.signOut(); navigate("/admin/login"); }}
-            className="text-xs text-muted-foreground"
-          >
-            Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setInviteOpen(true)}
+              className="bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90"
+            >
+              <Send className="mr-1.5 h-4 w-4" /> Invite via WhatsApp
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => { await supabase.auth.signOut(); navigate("/admin/login"); }}
+              className="text-xs text-muted-foreground"
+            >
+              Logout
+            </Button>
+          </div>
         </div>
 
         {/* Stat tiles */}
