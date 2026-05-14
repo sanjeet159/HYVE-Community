@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { Search, Check, X, Copy, ExternalLink, MessageCircle, Phone, MapPin, Briefcase, Clock, FileText, Linkedin, Globe, Calendar, Inbox, CheckCircle2, XCircle, Heart, ChevronRight } from "lucide-react";
+import { Search, Check, X, Copy, ExternalLink, MessageCircle, Phone, MapPin, Briefcase, Clock, FileText, Linkedin, Globe, Calendar, Inbox, CheckCircle2, XCircle, Heart, ChevronRight, Send } from "lucide-react";
 
 type Status = "pending" | "approved" | "rejected";
 interface Application {
@@ -36,6 +36,9 @@ const tpl = (name: string) =>
 const rejectTpl = (name: string) =>
   `Hey ${name},\n\nThank you so much for applying to Hyve and taking the time to share your story with us. 💛\n\nAfter careful review, we're unable to offer you a spot in the community at this moment. Hyve is a curated space, and we keep the group tightly aligned with where the community is right now — this isn't a reflection of your talent or potential.\n\nA few notes from our side:\n• Keep building your portfolio and putting your work out there\n• You're welcome to re-apply in the future as you grow\n• Follow us on hyvefreelance.com for resources and updates\n\nWishing you the very best on your journey.\n— The Hyve team`;
 
+const inviteTpl = () =>
+  `Hey! 👋\n\nWe're building HYVE — a curated community of freelance designers, developers, writers & marketers shipping real work for real clients.\n\nIf you're a freelancer (or know one), we'd love to have you in.\n\n✨ Apply here: https://join.hyvefreelance.com\n\nIt takes 2 minutes. Once approved, you're in the inner circle — gigs, collabs, and a community that actually gets it.\n\n— The HYVE Team\nhyvefreelance.com`;
+
 const filterTabs: { value: "all" | Status; label: string; tone: string }[] = [
   { value: "all", label: "All", tone: "all" },
   { value: "pending", label: "Pending", tone: "pending" },
@@ -52,6 +55,7 @@ const AdminApplications = () => {
   const [skill, setSkill] = useState<string>("all");
   const [approved, setApproved] = useState<Application | null>(null);
   const [rejected, setRejected] = useState<Application | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const load = async () => {
@@ -111,14 +115,23 @@ const AdminApplications = () => {
               <span className="font-medium text-primary">{counts.pending}</span> pending review
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={async () => { await supabase.auth.signOut(); navigate("/admin/login"); }}
-            className="text-xs text-muted-foreground"
-          >
-            Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setInviteOpen(true)}
+              className="bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90"
+            >
+              <Send className="mr-1.5 h-4 w-4" /> Invite via WhatsApp
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => { await supabase.auth.signOut(); navigate("/admin/login"); }}
+              className="text-xs text-muted-foreground"
+            >
+              Logout
+            </Button>
+          </div>
         </div>
 
         {/* Stat tiles */}
@@ -236,6 +249,12 @@ const AdminApplications = () => {
       <Dialog open={!!rejected} onOpenChange={(o) => !o && setRejected(null)}>
         <DialogContent className="max-w-lg">
           {rejected && <MessageTemplate kind="rejected" app={rejected} onClose={() => setRejected(null)} />}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="max-w-lg">
+          <InviteTemplate onClose={() => setInviteOpen(false)} />
         </DialogContent>
       </Dialog>
     </AdminLayout>
@@ -396,6 +415,41 @@ const MessageTemplate = ({ kind, app, onClose }: { kind: "approved" | "rejected"
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button onClick={copy} variant="outline" className="flex-1"><Copy className="mr-2 h-4 w-4" /> Copy message</Button>
         <Button type="button" onClick={openWhatsApp} className={`flex-1 ${isApproved ? "bg-success text-success-foreground hover:bg-success/90" : "bg-foreground text-background hover:bg-foreground/90"}`}>
+          <MessageCircle className="mr-2 h-4 w-4" /> Open WhatsApp
+        </Button>
+      </div>
+      <Button variant="ghost" onClick={onClose}>Done</Button>
+    </>
+  );
+};
+
+const InviteTemplate = ({ onClose }: { onClose: () => void }) => {
+  const message = inviteTpl();
+  const waLink = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  const copy = async () => { await navigator.clipboard.writeText(message); toast({ title: "Invite copied", description: "Paste it into any WhatsApp chat or community." }); };
+  const openWhatsApp = async () => {
+    const popup = window.open(waLink, "_blank", "noopener,noreferrer");
+    if (!popup) { await navigator.clipboard.writeText(message); toast({ title: "Popup blocked", description: "Invite copied — paste it into WhatsApp manually." }); return; }
+    toast({ title: "Opening WhatsApp", description: "Pick a chat or community to send the invite." });
+  };
+  return (
+    <>
+      <DialogHeader>
+        <div className="mb-2 flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary">
+            <Send className="h-4 w-4" />
+          </span>
+          <DialogTitle className="font-display text-2xl">Invite freelancers to HYVE</DialogTitle>
+        </div>
+        <DialogDescription>
+          Share this with any WhatsApp community or chat. Recipients can apply at{" "}
+          <span className="font-medium text-foreground">join.hyvefreelance.com</span>.
+        </DialogDescription>
+      </DialogHeader>
+      <Textarea readOnly value={message} rows={12} className="font-mono text-sm" />
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button onClick={copy} variant="outline" className="flex-1"><Copy className="mr-2 h-4 w-4" /> Copy invite</Button>
+        <Button type="button" onClick={openWhatsApp} className="flex-1 bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90">
           <MessageCircle className="mr-2 h-4 w-4" /> Open WhatsApp
         </Button>
       </div>
