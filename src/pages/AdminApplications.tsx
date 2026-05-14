@@ -423,4 +423,39 @@ const MessageTemplate = ({ kind, app, onClose }: { kind: "approved" | "rejected"
   );
 };
 
+const InviteTemplate = ({ onClose }: { onClose: () => void }) => {
+  const message = inviteTpl();
+  const waLink = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  const copy = async () => { await navigator.clipboard.writeText(message); toast({ title: "Invite copied", description: "Paste it into any WhatsApp chat or community." }); };
+  const openWhatsApp = async () => {
+    const popup = window.open(waLink, "_blank", "noopener,noreferrer");
+    if (!popup) { await navigator.clipboard.writeText(message); toast({ title: "Popup blocked", description: "Invite copied — paste it into WhatsApp manually." }); return; }
+    toast({ title: "Opening WhatsApp", description: "Pick a chat or community to send the invite." });
+  };
+  return (
+    <>
+      <DialogHeader>
+        <div className="mb-2 flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary">
+            <Send className="h-4 w-4" />
+          </span>
+          <DialogTitle className="font-display text-2xl">Invite freelancers to HYVE</DialogTitle>
+        </div>
+        <DialogDescription>
+          Share this with any WhatsApp community or chat. Recipients can apply at{" "}
+          <span className="font-medium text-foreground">join.hyvefreelance.com</span>.
+        </DialogDescription>
+      </DialogHeader>
+      <Textarea readOnly value={message} rows={12} className="font-mono text-sm" />
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button onClick={copy} variant="outline" className="flex-1"><Copy className="mr-2 h-4 w-4" /> Copy invite</Button>
+        <Button type="button" onClick={openWhatsApp} className="flex-1 bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90">
+          <MessageCircle className="mr-2 h-4 w-4" /> Open WhatsApp
+        </Button>
+      </div>
+      <Button variant="ghost" onClick={onClose}>Done</Button>
+    </>
+  );
+};
+
 export default AdminApplications;
