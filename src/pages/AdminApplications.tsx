@@ -257,6 +257,7 @@ const AdminApplications = () => {
           <InviteTemplate onClose={() => setInviteOpen(false)} />
         </DialogContent>
       </Dialog>
+    </AdminLayout>
   );
 };
 
